@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Loader2, PackageX } from "lucide-react";
@@ -38,7 +38,7 @@ type Order = {
   createdAt: string;
 };
 
-export default function OrderConfirmedPage() {
+function OrderConfirmedContent() {
   const searchParams = useSearchParams();
   const paymentId = searchParams.get("payment_id");
 
@@ -190,5 +190,19 @@ export default function OrderConfirmedPage() {
         <Link href="/">Continue Shopping</Link>
       </Button>
     </main>
+  );
+}
+
+export default function OrderConfirmedPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="container mx-auto px-4 max-w-2xl min-h-screen flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </main>
+      }
+    >
+      <OrderConfirmedContent />
+    </Suspense>
   );
 }

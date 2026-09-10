@@ -31,7 +31,6 @@ const Header = () => {
                 }
               >
                 <Brand />
-                <Badge variant="destructive">TEST</Badge>
               </Suspense>
             </Link>
 

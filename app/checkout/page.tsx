@@ -28,6 +28,8 @@ import { getExpectedDelivery } from "@/lib/checkout-utils";
 import { EmptyCart } from "@/components/checkout/empty-cart";
 import { PaymentStep } from "@/components/checkout/payment-step";
 
+const COD_ADVANCE_AMOUNT = 300;
+
 declare global {
   interface Window {
     Razorpay: any;
@@ -102,6 +104,10 @@ export default function CheckoutPage() {
   const cleanerCharge = shoeCleanerAddon && addShoeCleaner ? SHOE_CLEANER_PRICE : 0;
   const totalAmount = subtotal + shippingCharge + cleanerCharge;
 
+  const isCod = shippingMethod === "cod";
+  const paymentAmount = isCod ? COD_ADVANCE_AMOUNT : totalAmount;
+  const remainingAmount = isCod ? totalAmount - COD_ADVANCE_AMOUNT : 0;
+
   const onlineDelivery = getExpectedDelivery(ONLINE_DELIVERY_MIN_DAYS, ONLINE_DELIVERY_MAX_DAYS, orderDate);
   const codDelivery = getExpectedDelivery(COD_DELIVERY_MIN_DAYS, COD_DELIVERY_MAX_DAYS, orderDate);
   const activeDelivery = shippingMethod === "online" ? onlineDelivery : codDelivery;
@@ -124,7 +130,7 @@ export default function CheckoutPage() {
     if (!customerDetails.pincode) errors.push("Pincode is required.");
     return errors;
   };
-console.log(mainProduct, freeProduct);
+
   const buildOrderPayload = () => {
     const items = [
       {
@@ -155,10 +161,13 @@ console.log(mainProduct, freeProduct);
       subtotal,
       shippingCharge,
       totalAmount,
+      isCod,
+      advancePaid: paymentAmount,
+      remainingAmount,
       expectedDeliveryLabel: activeDelivery.label,
     };
   };
- 
+
   const handleRazorpayPayment = async () => {
     const errors = validateDetails();
     if (errors.length > 0) {
@@ -179,7 +188,7 @@ console.log(mainProduct, freeProduct);
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: totalAmount, // Convert to paise
+          amount: paymentAmount,
           currency: "INR",
           receipt: `order_${Date.now()}`,
         }),
@@ -195,7 +204,9 @@ console.log(mainProduct, freeProduct);
         amount: orderData.order.amount,
         currency: orderData.order.currency,
         name: site.name || "Footex",
-        description: "2 Pair Shoes Order",
+        description: isCod
+          ? `COD Advance Payment (₹${COD_ADVANCE_AMOUNT})`
+          : "2 Pair Shoes Order",
         order_id: orderData.order.id,
         prefill: {
           name: customerDetails.name,
@@ -207,6 +218,8 @@ console.log(mainProduct, freeProduct);
           state: customerDetails.state,
           pincode: customerDetails.pincode,
           instagram: customerDetails.instagramId,
+          isCod: String(isCod),
+          remainingAmount: String(remainingAmount),
         },
         theme: { color: "#000000" },
         handler: async (response: any) => {
@@ -320,6 +333,12 @@ console.log(mainProduct, freeProduct);
           activeDeliveryEnd={activeDelivery.end}
           totalAmount={totalAmount}
         />
+
+        {isCod && (
+          <p className="text-sm text-muted-foreground mt-2 text-center">
+            ₹{COD_ADVANCE_AMOUNT} advance now, ₹{remainingAmount} on delivery.
+          </p>
+        )}
       </div>
 
       {freeSocksOffer && (
@@ -341,6 +360,8 @@ console.log(mainProduct, freeProduct);
                 <>
                   <Loader2 className="h-5 w-5 animate-spin" /> Processing...
                 </>
+              ) : isCod ? (
+                `Pay ₹${COD_ADVANCE_AMOUNT} Advance`
               ) : (
                 `Pay Now – ₹${totalAmount}`
               )}

@@ -36,6 +36,9 @@ export async function POST(request: NextRequest) {
         subtotal,
         shippingCharge,
         totalAmount,
+        isCod,
+        advancePaid,
+        remainingAmount,
         expectedDeliveryLabel,
       } = orderPayload;
 
@@ -69,10 +72,13 @@ export async function POST(request: NextRequest) {
         subtotal,
         shippingCharge,
         totalAmount,
+        isCod: !!isCod,
+        advancePaid: advancePaid ?? totalAmount,
+        remainingAmount: remainingAmount ?? 0,
         expectedDeliveryLabel,
         razorpayOrderId: razorpay_order_id,
         razorpayPaymentId: razorpay_payment_id,
-        paymentStatus: "paid",
+        paymentStatus: isCod ? "advance_paid" : "paid",
         fulfillmentStatus: "pending",
         createdAt: new Date().toISOString(),
       });

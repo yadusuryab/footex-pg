@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
           product: item.productId
             ? { _type: "reference", _ref: item.productId }
             : undefined,
+          imageUrl: item.imageUrl,
           productName: item.productName,
           size: item.size,
           price: item.price,

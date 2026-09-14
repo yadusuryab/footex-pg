@@ -174,6 +174,8 @@ const orderItem = {
   fields: [
     { name: "product", title: "Product", type: "reference", to: [{ type: "shoe" }] },
     { name: "productName", title: "Product Name", type: "string" },
+    { name: "imageUrl", title: "Product Image", type: "image" },
+
     { name: "size", title: "Size", type: "number" },
     { name: "price", title: "Price", type: "number" },
     { name: "isFreeItem", title: "Free Item (BOGO)?", type: "boolean", initialValue: false },

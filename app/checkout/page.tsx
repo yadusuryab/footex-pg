@@ -124,11 +124,12 @@ export default function CheckoutPage() {
     if (!customerDetails.pincode) errors.push("Pincode is required.");
     return errors;
   };
-
+console.log(mainProduct, freeProduct);
   const buildOrderPayload = () => {
     const items = [
       {
         productId: mainProduct?._id,
+        imageUrl: mainProduct?.imageUrl,
         productName: mainProduct?.productName,
         size: mainProduct?.selectedSize,
         price: mainProduct?.price || BASE_PRICE,
@@ -138,13 +139,13 @@ export default function CheckoutPage() {
     if (mainProduct?.buyOneGetOne && freeProduct) {
       items.push({
         productId: freeProduct._id,
+        imageUrl: freeProduct.imageUrl,
         productName: freeProduct.productName,
         size: freeProduct.selectedSize,
         price: freeProduct.price || BASE_PRICE,
         isFreeItem: true,
       });
     }
-
     return {
       items,
       customerDetails,
@@ -157,7 +158,7 @@ export default function CheckoutPage() {
       expectedDeliveryLabel: activeDelivery.label,
     };
   };
-
+ 
   const handleRazorpayPayment = async () => {
     const errors = validateDetails();
     if (errors.length > 0) {
@@ -178,7 +179,8 @@ export default function CheckoutPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: 50,
+          amount: totalAmount * 100, // Convert to paise
+          currency: "INR",
           receipt: `order_${Date.now()}`,
         }),
       });

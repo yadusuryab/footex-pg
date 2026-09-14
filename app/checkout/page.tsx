@@ -179,7 +179,7 @@ console.log(mainProduct, freeProduct);
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: totalAmount * 100, // Convert to paise
+          amount: totalAmount, // Convert to paise
           currency: "INR",
           receipt: `order_${Date.now()}`,
         }),

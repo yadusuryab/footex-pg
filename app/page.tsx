@@ -7,6 +7,7 @@ import { Hero } from "@/components/sections/hero";
 import { ReviewsBento } from "@/components/sections/review-bento";
 import { ProductCardWithSale } from "@/components/sections/sale-is-live";
 import { client } from "@/sanityClient";
+import { OrderTrackCTA } from "@/components/sections/order-track";
 
 export default function Home() {
   const [freeSocksOffer, setFreeSocksOffer] = useState(false);
@@ -22,18 +23,21 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="flex py-0 flex-col min-h-screen">
+    <div className="flex py-0 px-4 flex-col min-h-screen">
       <div className="relative overflow-hidden">
-        <div className="px-4">
+       
           <Hero />
-        </div>
+        
       </div>
-
+<div className="px-4 mt-4 ">
+        <OrderTrackCTA/>
+    </div>
       {freeSocksOffer && (
         <div className="px-4 my-8">
           <FreeSocksPromo />
         </div>
       )}
+    
 
       <div className="px-4 my-8">
         <ReviewsBento />

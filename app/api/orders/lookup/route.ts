@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const order = await client.fetch(
       `*[_type == "order" && razorpayPaymentId == $paymentId][0]{
         orderId,
-        items[]{ productName, size, price, isFreeItem },
+        items[]{ productName, size, price, isFreeItem, imageUrl },
         customerName,
         contact1,
         address,

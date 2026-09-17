@@ -329,7 +329,7 @@ export const useAddToCart = () => {
             {currentProduct.sizes?.map((size: string) => (
               <Button
                 key={size}
-                className="min-w-[60px]"
+                className="min-w-[60px] font-semibold rounded-md"
                 variant={currentSize === size ? "default" : "outline"}
                 onClick={() => {
                   if (isSelectingFreeProduct) {
@@ -339,7 +339,7 @@ export const useAddToCart = () => {
                   }
                 }}
               >
-                {size}
+               UK {size}
               </Button>
             ))}
           </div>

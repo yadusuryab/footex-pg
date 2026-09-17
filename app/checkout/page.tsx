@@ -30,6 +30,11 @@ import { PaymentStep } from "@/components/checkout/payment-step";
 
 const COD_ADVANCE_AMOUNT = 300;
 
+// TODO: point this at your real site origin if site-config exposes one
+// (e.g. site.url) — kept as a literal to match the domain used in the
+// WhatsApp-only checkout flow.
+const SITE_ORIGIN = "https://magshoppy.in";
+
 declare global {
   interface Window {
     Razorpay: any;
@@ -168,6 +173,55 @@ export default function CheckoutPage() {
     };
   };
 
+  // Builds the same order-confirmation message format used by the
+  // WhatsApp-only checkout flow, so support gets a consistent layout
+  // regardless of which path the order came through.
+  const buildWhatsAppMessage = (reason: string) => {
+    const pairLines = [
+      `*PAIR 1 :* ${SITE_ORIGIN}/p/${mainProduct?._id}\nSize: ${mainProduct?.selectedSize || "N/A"}`,
+    ];
+    if (mainProduct?.buyOneGetOne && freeProduct) {
+      pairLines.push(
+        `*PAIR 2 :* ${SITE_ORIGIN}/p/${freeProduct._id}\nSize: ${freeProduct.selectedSize || "N/A"}`,
+      );
+    }
+
+    return `*ORDER CONFIRMATION – 2 PAIR COMBO*
+⚠️ ${reason}. Please confirm this order manually.
+
+*CUSTOMER INFORMATION*
+Name: ${customerDetails.name}
+Instagram ID: ${customerDetails.instagramId || "N/A"}
+Address: ${customerDetails.address}
+District: ${customerDetails.district}
+State: ${customerDetails.state}
+Pincode: ${customerDetails.pincode}
+Landmark: ${customerDetails.landmark || "N/A"}
+Phone 1: ${customerDetails.contact1}
+Alternative Phone 2: ${customerDetails.contact2 || "N/A"}
+
+*PRODUCT DETAILS*
+
+${pairLines.join("\n\n")}
+
+*PAYMENT SUMMARY*
+- Product Price: ₹${subtotal}
+${cleanerCharge > 0 ? `- Add-on: Shoe Cleaner (+₹${SHOE_CLEANER_PRICE})\n` : ""}- Shipping: ${shippingMethod === "online" ? "Free (Prepaid)" : `₹${COD_CHARGE} (COD)`}
+${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
+*Total Amount Payable: ₹${totalAmount}✅*`.trim();
+  };
+
+  // Single fallback path for any payment-gateway failure: build the order
+  // message, hand it to WhatsApp, and clear the cart since the order has
+  // effectively been handed off for manual confirmation.
+  const redirectToWhatsAppFallback = (reason: string) => {
+    const message = buildWhatsAppMessage(reason);
+    window.open(`https://wa.me/${site.phone}?text=${encodeURIComponent(message)}`, "_blank");
+    localStorage.removeItem("cart");
+    setFormErrors([`${reason}. We've opened WhatsApp so you can confirm your order directly with us.`]);
+    setIsLoading(false);
+  };
+
   const handleRazorpayPayment = async () => {
     const errors = validateDetails();
     if (errors.length > 0) {
@@ -176,7 +230,7 @@ export default function CheckoutPage() {
     }
 
     if (!razorpayReady || typeof window.Razorpay === "undefined") {
-      setFormErrors(["Payment gateway is still loading. Please try again in a moment."]);
+      redirectToWhatsAppFallback("Payment gateway is currently unavailable");
       return;
     }
 
@@ -237,32 +291,31 @@ export default function CheckoutPage() {
             const verifyData = await verifyRes.json();
 
             if (!verifyData.success) {
-              setFormErrors(["Payment verification failed. Please contact support."]);
-              setIsLoading(false);
+              redirectToWhatsAppFallback("Payment verification failed");
               return;
             }
 
             localStorage.removeItem("cart");
             router.push(`/order-confirmed?payment_id=${response.razorpay_payment_id}`);
           } catch {
-            setFormErrors(["Something went wrong confirming your payment."]);
-            setIsLoading(false);
+            redirectToWhatsAppFallback("We couldn't confirm your payment");
           }
         },
         modal: {
+          // User closed the checkout modal themselves — that's a
+          // cancellation, not a gateway failure, so just reset state
+          // rather than redirecting them elsewhere.
           ondismiss: () => setIsLoading(false),
         },
       };
 
       const rzp = new window.Razorpay(options);
       rzp.on("payment.failed", () => {
-        setFormErrors(["Payment failed. Please try again."]);
-        setIsLoading(false);
+        redirectToWhatsAppFallback("Your payment failed");
       });
       rzp.open();
     } catch (err) {
-      setIsLoading(false);
-      setFormErrors(["Failed to start payment. Please try again."]);
+      redirectToWhatsAppFallback("We couldn't start the payment");
     }
   };
 
@@ -275,6 +328,7 @@ export default function CheckoutPage() {
       <Script
         src="https://checkout.razorpay.com/v1/checkout.js"
         onLoad={() => setRazorpayReady(true)}
+        onError={() => setRazorpayReady(false)}
       />
 
       <div className="py-4">

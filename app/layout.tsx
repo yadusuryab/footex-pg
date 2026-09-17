@@ -7,6 +7,7 @@ import Header from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import GoogleTagManager from "@/components/analyatics/GoogleTagManager";
 import MetaPixel from "@/components/analyatics/MetaPixel";
+import { WhatsAppButton } from "@/components/utils/wp";
 
 // ✅ OPTIMIZED: Preload only necessary font weights
 const poppins = Poppins({
@@ -50,7 +51,7 @@ export default function RootLayout({
         <Header />
         <main className="py-5 min-h-screen"> {/* ✅ Added main tag for semantics */}
           {children}
-          
+          <WhatsAppButton/>
          
 </main>
         <Footer />

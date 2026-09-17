@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/sonner";
 import Header from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import GoogleTagManager from "@/components/analyatics/GoogleTagManager";
+import MetaPixel from "@/components/analyatics/MetaPixel";
 
 // ✅ OPTIMIZED: Preload only necessary font weights
 const poppins = Poppins({
@@ -42,6 +43,7 @@ export default function RootLayout({
         <link rel="icon" href="/icon?<generated>" type="image/<generated>" sizes="<generated>" />
         <link rel="apple-touch-icon" href="/apple-touch-icon?<generated>" type="image/<generated>" sizes="<generated>" />
       </head>
+       <MetaPixel />
       
       <body className={`${poppins.className} antialiased`}>
         {/* ✅ OPTIMIZED: Consider lazy loading non-critical components */}

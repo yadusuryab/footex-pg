@@ -33,7 +33,9 @@ const COD_ADVANCE_AMOUNT = 300;
 // TODO: point this at your real site origin if site-config exposes one
 // (e.g. site.url) — kept as a literal to match the domain used in the
 // WhatsApp-only checkout flow.
-const SITE_ORIGIN = "https://magshoppy.in";
+const SITE_ORIGIN = "https://footex.in";
+
+const REQUIRED_FIELDS = ["name", "contact1", "address", "district", "state", "pincode"] as const;
 
 declare global {
   interface Window {
@@ -59,7 +61,11 @@ export default function CheckoutPage() {
     instagramId: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  // Reserved for operational/gateway-level messages only (script failed to
+  // load, payment failed, verification failed). Required-field validation
+  // is now shown inline per-field instead — see touched/getFieldError below.
   const [formErrors, setFormErrors] = useState<string[]>([]);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [orderDate] = useState<Date>(() => new Date());
 
   const [freeSocksOffer, setFreeSocksOffer] = useState(false);
@@ -117,23 +123,45 @@ export default function CheckoutPage() {
   const codDelivery = getExpectedDelivery(COD_DELIVERY_MIN_DAYS, COD_DELIVERY_MAX_DAYS, orderDate);
   const activeDelivery = shippingMethod === "online" ? onlineDelivery : codDelivery;
 
+  // --- Field-level validation (inline, no top alert) ---
+  const phoneValid = /^\d{10}$/.test(customerDetails.contact1.trim());
+  const pincodeValid = /^\d{6}$/.test(customerDetails.pincode.trim());
+
+  const missingFields = REQUIRED_FIELDS.filter(
+    (field) => !customerDetails[field]?.trim(),
+  );
+
+  const isFormValid = missingFields.length === 0 && phoneValid && pincodeValid;
+
+  const getFieldError = (field: string): string | undefined => {
+    if (!touched[field]) return undefined;
+    if (
+      (REQUIRED_FIELDS as readonly string[]).includes(field) &&
+      !customerDetails[field as keyof CustomerDetails]?.trim()
+    ) {
+      return "This field is required";
+    }
+    if (field === "contact1" && customerDetails.contact1.trim() && !phoneValid) {
+      return "Enter a valid 10-digit phone number";
+    }
+    if (field === "pincode" && customerDetails.pincode.trim() && !pincodeValid) {
+      return "Enter a valid 6-digit pincode";
+    }
+    return undefined;
+  };
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setCustomerDetails((prev) => ({ ...prev, [name]: value }));
-    if (formErrors.length > 0) setFormErrors([]);
   };
 
-  const validateDetails = (): string[] => {
-    const errors: string[] = [];
-    if (!customerDetails.name) errors.push("Name is required.");
-    if (!customerDetails.contact1) errors.push("Contact number is required.");
-    if (!customerDetails.address) errors.push("Address is required.");
-    if (!customerDetails.district) errors.push("District is required.");
-    if (!customerDetails.state) errors.push("State is required.");
-    if (!customerDetails.pincode) errors.push("Pincode is required.");
-    return errors;
+  const handleInputBlur = (
+    e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    const { name } = e.target;
+    setTouched((prev) => ({ ...prev, [name]: true }));
   };
 
   const buildOrderPayload = () => {
@@ -223,9 +251,18 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
   };
 
   const handleRazorpayPayment = async () => {
-    const errors = validateDetails();
-    if (errors.length > 0) {
-      setFormErrors(errors);
+    // Mark every required field touched so any that are still invalid
+    // surface their inline error right under the field, instead of a
+    // separate list at the top of the page.
+    setTouched((prev) => {
+      const next = { ...prev };
+      REQUIRED_FIELDS.forEach((field) => {
+        next[field] = true;
+      });
+      return next;
+    });
+
+    if (!isFormValid) {
       return;
     }
 
@@ -372,6 +409,8 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
               <CustomerDetailsForm
                 customerDetails={customerDetails}
                 handleInputChange={handleInputChange}
+                handleInputBlur={handleInputBlur}
+                getFieldError={getFieldError}
               />
             </CardContent>
           </Card>
@@ -420,6 +459,11 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
                 `Pay Now – ₹${totalAmount}`
               )}
             </Button>
+            {!isFormValid && (
+              <p className="text-xs text-center text-red-500 mt-2">
+                Fill all required fields to continue
+              </p>
+            )}
             <p className="text-xs text-center text-muted-foreground mt-2">
               Secure payment via Razorpay • Estimated delivery {activeDelivery.label}
             </p>

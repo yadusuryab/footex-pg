@@ -2,7 +2,13 @@
 
 import Script from "next/script";
 
-const PIXEL_ID = 1732582114635401;
+const PIXEL_ID = "1732582114635401";
+
+declare global {
+  interface Window {
+    fbq?: (...args: unknown[]) => void;
+  }
+}
 
 export default function MetaPixel() {
   if (!PIXEL_ID) return null;

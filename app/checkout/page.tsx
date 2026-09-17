@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Script from "next/script";
 import { useRouter } from "next/navigation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -10,6 +10,7 @@ import { CheckCircle2, Loader2 } from "lucide-react";
 import { CustomerDetailsForm } from "@/components/checkout/checkout-form";
 import { site } from "@/lib/site-config";
 import { client } from "@/sanityClient";
+import { fbEvent, fbTrackCustom } from "@/lib/fbq";
 
 import { OrderSummary } from "@/components/checkout/order-summary";
 import {
@@ -72,6 +73,9 @@ export default function CheckoutPage() {
   const [shoeCleanerAddon, setShoeCleanerAddon] = useState(false);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [razorpayReady, setRazorpayReady] = useState(false);
+
+  // Guards so repeated step navigation doesn't re-fire InitiateCheckout.
+  const initiateCheckoutFired = useRef(false);
 
   useEffect(() => {
     try {
@@ -201,6 +205,19 @@ export default function CheckoutPage() {
     };
   };
 
+  // Shared shape for Meta Pixel content params, built from cart contents.
+  const buildPixelPayload = () => {
+    const ids = [mainProduct?._id].filter(Boolean) as string[];
+    if (mainProduct?.buyOneGetOne && freeProduct?._id) ids.push(freeProduct._id);
+    return {
+      content_ids: ids,
+      content_type: "product" as const,
+      contents: ids.map((id) => ({ id, quantity: 1 })),
+      num_items: ids.length,
+      currency: "INR",
+    };
+  };
+
   // Builds the same order-confirmation message format used by the
   // WhatsApp-only checkout flow, so support gets a consistent layout
   // regardless of which path the order came through.
@@ -243,11 +260,30 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
   // message, hand it to WhatsApp, and clear the cart since the order has
   // effectively been handed off for manual confirmation.
   const redirectToWhatsAppFallback = (reason: string) => {
+    // Order wasn't confirmed by Razorpay, so this is a custom event, not
+    // a standard Purchase — keeps reported Purchase revenue accurate.
+    fbTrackCustom("WhatsAppOrderHandoff", {
+      value: totalAmount,
+      currency: "INR",
+      reason,
+    });
+
     const message = buildWhatsAppMessage(reason);
     window.open(`https://wa.me/${site.phone}?text=${encodeURIComponent(message)}`, "_blank");
     localStorage.removeItem("cart");
     setFormErrors([`${reason}. We've opened WhatsApp so you can confirm your order directly with us.`]);
     setIsLoading(false);
+  };
+
+  const goToDetailsStep = () => {
+    if (!initiateCheckoutFired.current) {
+      initiateCheckoutFired.current = true;
+      fbEvent("InitiateCheckout", {
+        ...buildPixelPayload(),
+        value: totalAmount,
+      });
+    }
+    setCurrentStep("details");
   };
 
   const handleRazorpayPayment = async () => {
@@ -332,6 +368,20 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
               return;
             }
 
+            // Fire only after server-side verification succeeds, and use
+            // the Razorpay payment id as the eventID so a page refresh on
+            // /order-confirmed can't double-count this purchase (dedupe
+            // also applies if you later add server-side Conversions API).
+            fbEvent(
+              "Purchase",
+              {
+                ...buildPixelPayload(),
+                value: totalAmount,
+                content_name: isCod ? "COD Order" : "Prepaid Order",
+              },
+              response.razorpay_payment_id,
+            );
+
             localStorage.removeItem("cart");
             router.push(`/order-confirmed?payment_id=${response.razorpay_payment_id}`);
           } catch {
@@ -395,7 +445,7 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
             setShippingMethod={setShippingMethod}
             onlineDeliveryLabel={onlineDelivery.label}
             codDeliveryLabel={codDelivery.label}
-            onContinue={() => setCurrentStep("details")}
+            onContinue={goToDetailsStep}
           />
         ) : (
           <Card>

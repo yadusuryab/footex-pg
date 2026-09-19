@@ -7,6 +7,7 @@ import { CheckCircle2, Loader2, PackageX } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { fbEvent } from "@/lib/fbq";
 
 type OrderItem = {
   productName: string;
@@ -38,6 +39,34 @@ type Order = {
   createdAt: string;
 };
 
+// Fires Purchase exactly once for a given payment. This only ever runs from
+// inside the `/api/orders/lookup` success branch below, i.e. only when a
+// real order was found in Sanity for this payment_id — so visiting this
+// page with a made-up or reused payment_id in the URL can't trigger it.
+// The localStorage flag stops a refresh or a revisit of the same
+// confirmation link from firing it a second time.
+function firePurchaseOnce(order: Order, paymentId: string) {
+  if (typeof window === "undefined") return;
+
+  const firedKey = `purchase_fired_${paymentId}`;
+  if (localStorage.getItem(firedKey)) return;
+
+  fbEvent(
+    "Purchase",
+    {
+      content_type: "product",
+      contents: order.items.map((item) => ({ id: item.productName, quantity: 1 })),
+      num_items: order.items.length,
+      currency: "INR",
+      value: order.totalAmount,
+      content_name: order.shippingMethod === "cod" ? "COD Order" : "Prepaid Order",
+    },
+    paymentId, // eventID — dedupes if you ever add server-side CAPI later
+  );
+
+  localStorage.setItem(firedKey, "1");
+}
+
 function OrderConfirmedContent() {
   const searchParams = useSearchParams();
   const paymentId = searchParams.get("payment_id");
@@ -60,6 +89,7 @@ function OrderConfirmedContent() {
         const data = await res.json();
         setOrder(data.order);
         setStatus("found");
+        firePurchaseOnce(data.order, paymentId);
       })
       .catch(() => setStatus("error"));
   }, [paymentId]);

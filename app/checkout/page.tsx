@@ -206,6 +206,9 @@ export default function CheckoutPage() {
   };
 
   // Shared shape for Meta Pixel content params, built from cart contents.
+  // Still used by InitiateCheckout below — Purchase tracking has moved to
+  // /order-confirmed, guarded against firing unless the order is confirmed
+  // to actually exist there.
   const buildPixelPayload = () => {
     const ids = [mainProduct?._id].filter(Boolean) as string[];
     if (mainProduct?.buyOneGetOne && freeProduct?._id) ids.push(freeProduct._id);
@@ -368,19 +371,9 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
               return;
             }
 
-            // Fire only after server-side verification succeeds, and use
-            // the Razorpay payment id as the eventID so a page refresh on
-            // /order-confirmed can't double-count this purchase (dedupe
-            // also applies if you later add server-side Conversions API).
-            fbEvent(
-              "Purchase",
-              {
-                ...buildPixelPayload(),
-                value: totalAmount,
-                content_name: isCod ? "COD Order" : "Prepaid Order",
-              },
-              response.razorpay_payment_id,
-            );
+            // Purchase tracking now happens on /order-confirmed, and only
+            // fires once that page confirms this payment_id matches a real,
+            // persisted order — see that page's useEffect.
 
             localStorage.removeItem("cart");
             router.push(`/order-confirmed?payment_id=${response.razorpay_payment_id}`);

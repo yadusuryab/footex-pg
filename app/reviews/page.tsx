@@ -44,7 +44,7 @@ function MarqueeColumn({
   return (
     <div className="relative h-full rounded-xl overflow-hidden">
       <div
-        className="flex flex-col gap-4 animate-marquee"
+        className="flex flex-col gap-4 animate-marquee2"
         style={{
           animationDuration: `${duration}s`,
           animationDirection: reverse ? "reverse" : "normal",

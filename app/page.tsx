@@ -8,6 +8,7 @@ import { ReviewsBento } from "@/components/sections/review-bento";
 import { ProductCardWithSale } from "@/components/sections/sale-is-live";
 import { client } from "@/sanityClient";
 import { OrderTrackCTA } from "@/components/sections/order-track";
+import { ShopVideo } from "@/components/layout/sv";
 
 export default function Home() {
   const [freeSocksOffer, setFreeSocksOffer] = useState(false);
@@ -42,6 +43,7 @@ export default function Home() {
       <div className="px-4 my-8">
         <ReviewsBento />
       </div>
+      <ShopVideo/>
 
       {/*  <div className="px-4 my-8">
         <ProductCardWithSale />

@@ -30,6 +30,9 @@ export default function Home() {
           <Hero />
         
       </div>
+        <div className="px-4 my-8">
+        <ProductCardWithSale />
+      </div>
 <div className="px-4 mt-4 ">
         <OrderTrackCTA/>
     </div>
@@ -45,9 +48,7 @@ export default function Home() {
       </div>
       <ShopVideo/>
 
-      {/*  <div className="px-4 my-8">
-        <ProductCardWithSale />
-      </div>*/}
+     
 
       {/* <BrandStory /> */}
     </div>

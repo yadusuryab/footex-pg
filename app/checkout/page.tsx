@@ -31,9 +31,6 @@ import { PaymentStep } from "@/components/checkout/payment-step";
 
 const COD_ADVANCE_AMOUNT = 300;
 
-// TODO: point this at your real site origin if site-config exposes one
-// (e.g. site.url) — kept as a literal to match the domain used in the
-// WhatsApp-only checkout flow.
 const SITE_ORIGIN = "https://footex.in";
 
 const REQUIRED_FIELDS = ["name", "contact1", "address", "district", "state", "pincode"] as const;
@@ -62,9 +59,6 @@ export default function CheckoutPage() {
     instagramId: "",
   });
   const [isLoading, setIsLoading] = useState(false);
-  // Reserved for operational/gateway-level messages only (script failed to
-  // load, payment failed, verification failed). Required-field validation
-  // is now shown inline per-field instead — see touched/getFieldError below.
   const [formErrors, setFormErrors] = useState<string[]>([]);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [orderDate] = useState<Date>(() => new Date());
@@ -73,9 +67,6 @@ export default function CheckoutPage() {
   const [shoeCleanerAddon, setShoeCleanerAddon] = useState(false);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [razorpayReady, setRazorpayReady] = useState(false);
-
-  // Guards so repeated step navigation doesn't re-fire InitiateCheckout.
-  const initiateCheckoutFired = useRef(false);
 
   useEffect(() => {
     try {
@@ -127,7 +118,6 @@ export default function CheckoutPage() {
   const codDelivery = getExpectedDelivery(COD_DELIVERY_MIN_DAYS, COD_DELIVERY_MAX_DAYS, orderDate);
   const activeDelivery = shippingMethod === "online" ? onlineDelivery : codDelivery;
 
-  // --- Field-level validation (inline, no top alert) ---
   const phoneValid = /^\d{10}$/.test(customerDetails.contact1.trim());
   const pincodeValid = /^\d{6}$/.test(customerDetails.pincode.trim());
 
@@ -206,9 +196,8 @@ export default function CheckoutPage() {
   };
 
   // Shared shape for Meta Pixel content params, built from cart contents.
-  // Still used by InitiateCheckout below — Purchase tracking has moved to
-  // /order-confirmed, guarded against firing unless the order is confirmed
-  // to actually exist there.
+  // Used only for the Purchase event now, fired on confirmed Razorpay
+  // payment success below.
   const buildPixelPayload = () => {
     const ids = [mainProduct?._id].filter(Boolean) as string[];
     if (mainProduct?.buyOneGetOne && freeProduct?._id) ids.push(freeProduct._id);
@@ -221,9 +210,6 @@ export default function CheckoutPage() {
     };
   };
 
-  // Builds the same order-confirmation message format used by the
-  // WhatsApp-only checkout flow, so support gets a consistent layout
-  // regardless of which path the order came through.
   const buildWhatsAppMessage = (reason: string) => {
     const pairLines = [
       `*PAIR 1 :* ${SITE_ORIGIN}/p/${mainProduct?._id}\nSize: ${mainProduct?.selectedSize || "N/A"}`,
@@ -259,9 +245,6 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
 *Total Amount Payable: ₹${totalAmount}✅*`.trim();
   };
 
-  // Single fallback path for any payment-gateway failure: build the order
-  // message, hand it to WhatsApp, and clear the cart since the order has
-  // effectively been handed off for manual confirmation.
   const redirectToWhatsAppFallback = (reason: string) => {
     // Order wasn't confirmed by Razorpay, so this is a custom event, not
     // a standard Purchase — keeps reported Purchase revenue accurate.
@@ -279,20 +262,10 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
   };
 
   const goToDetailsStep = () => {
-    if (!initiateCheckoutFired.current) {
-      initiateCheckoutFired.current = true;
-      fbEvent("InitiateCheckout", {
-        ...buildPixelPayload(),
-        value: totalAmount,
-      });
-    }
     setCurrentStep("details");
   };
 
   const handleRazorpayPayment = async () => {
-    // Mark every required field touched so any that are still invalid
-    // surface their inline error right under the field, instead of a
-    // separate list at the top of the page.
     setTouched((prev) => {
       const next = { ...prev };
       REQUIRED_FIELDS.forEach((field) => {
@@ -371,9 +344,16 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
               return;
             }
 
-            // Purchase tracking now happens on /order-confirmed, and only
-            // fires once that page confirms this payment_id matches a real,
-            // persisted order — see that page's useEffect.
+            // Fire Purchase only on confirmed Razorpay payment success.
+            // eventID = payment_id for dedup against any server-side CAPI event.
+            fbEvent(
+              "Purchase",
+              {
+                ...buildPixelPayload(),
+                value: paymentAmount,
+              },
+              response.razorpay_payment_id,
+            );
 
             localStorage.removeItem("cart");
             router.push(`/order-confirmed?payment_id=${response.razorpay_payment_id}`);
@@ -382,9 +362,6 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
           }
         },
         modal: {
-          // User closed the checkout modal themselves — that's a
-          // cancellation, not a gateway failure, so just reset state
-          // rather than redirecting them elsewhere.
           ondismiss: () => setIsLoading(false),
         },
       };

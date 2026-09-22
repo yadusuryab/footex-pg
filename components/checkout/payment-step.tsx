@@ -1,14 +1,11 @@
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Zap, Truck, ArrowRight, Flame } from "lucide-react";
+import { ArrowRight, Truck, Sparkles, Check } from "lucide-react";
 import { ProductImage } from "./product-image";
 import { CartItem } from "@/lib/types/checkout";
 import { COD_CHARGE } from "@/lib/checkout-constants";
 import { ShoeCleanerAddon } from "./shoe-cleaner";
-
 
 export function PaymentStep({
   mainProduct,
@@ -36,129 +33,142 @@ export function PaymentStep({
   onContinue: () => void;
 }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center text-lg gap-2">
-          <CheckCircle2 className="h-5 w-5" />
-          Select Payment Method
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Card className="border-none shadow-none bg-transparent">
+      <CardContent className="p-0 space-y-7">
         {/* Product Pairs */}
-        <div className="mb-6">
-          <Label className="text-sm font-medium mb-3 block">
-            Your Selected Pairs 🔥
-          </Label>
-          <div className="flex gap-4">
-            <div className="flex-1">
+        <div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="group relative rounded-2xl bg-muted/40 p-3 transition-colors">
               <ProductImage
                 product={mainProduct}
                 alt={mainProduct.productName || "Main Product"}
-                borderClass="border-blue-500"
+                borderClass="border-transparent"
               />
-              <div className="mt-2 text-center">
-                <p className="text-sm font-medium">
+              <div className="mt-2.5">
+                <p className="text-sm font-medium leading-tight truncate text-foreground">
                   {mainProduct.productName || "Product"}
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  Size: {mainProduct.selectedSize || "N/A"}
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Size {mainProduct.selectedSize || "N/A"}
                 </p>
-                <Badge variant="default" className="mt-1">
-                  1st Pair
-                </Badge>
               </div>
+              <span className="absolute top-2 left-2 text-[10px] font-medium bg-background/90 backdrop-blur px-2 py-0.5 rounded-full text-foreground/70">
+                Pair 1
+              </span>
             </div>
+
             {freeProduct && (
-              <div className="flex-1">
+              <div className="group relative rounded-2xl bg-muted/40 p-3 transition-colors">
                 <ProductImage
                   product={freeProduct}
                   alt={freeProduct.productName || "Free Product"}
-                  borderClass="border-green-500"
+                  borderClass="border-transparent"
                 />
-                <div className="mt-2 text-center">
-                  <p className="text-sm font-medium">
+                <div className="mt-2.5">
+                  <p className="text-sm font-medium leading-tight truncate text-foreground">
                     {freeProduct.productName || "Free Product"}
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    Size: {freeProduct.selectedSize || "N/A"}
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Size {freeProduct.selectedSize || "N/A"}
                   </p>
-                  <Badge className="mt-1 bg-green-600 text-white">
-                    2nd Pair
-                  </Badge>
                 </div>
+                <span className="absolute top-2 left-2 text-[10px] font-medium bg-emerald-600 text-white px-2 py-0.5 rounded-full">
+                  Free
+                </span>
               </div>
             )}
           </div>
 
           {freeSocksOffer && (
-            <div className="mt-4 flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-600 via-orange-500 to-yellow-400 px-3 py-2 shadow-sm">
-              <Flame className="h-4 w-4 text-white shrink-0" />
-              <p className="text-xs font-bold text-white">
-                Offer: Free Flame Socks with this order 🎉
+            <div className="mt-3 flex items-center gap-2 rounded-xl bg-foreground text-background px-3.5 py-2.5">
+              <Sparkles className="h-3.5 w-3.5 shrink-0" />
+              <p className="text-xs font-medium">
+                Free socks included with this order
               </p>
             </div>
           )}
         </div>
 
         {/* Payment Options */}
-        <RadioGroup
-          value={shippingMethod}
-          onValueChange={(v: "online" | "cod") => setShippingMethod(v)}
-          className="space-y-3"
-        >
-          <div
-            className={`flex items-start gap-3 rounded-xl border-2 p-4 cursor-pointer transition-all ${
-              shippingMethod === "online"
-                ? "border-red-500 bg-red-50"
-                : "border-muted hover:border-primary/50"
-            }`}
-            onClick={() => setShippingMethod("online")}
+        <div>
+          <p className="text-xs font-medium text-muted-foreground mb-2.5">
+            Payment method
+          </p>
+          <RadioGroup
+            value={shippingMethod}
+            onValueChange={(v: "online" | "cod") => setShippingMethod(v)}
+            className="space-y-2"
           >
-            <RadioGroupItem value="online" id="online" className="mt-0.5 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <Label htmlFor="online" className="font-semibold cursor-pointer">
-                  Online Payment
-                </Label>
-                <Badge className="bg-green-700 text-green-50 text-xs px-2 py-0.5 rounded-full">
-                  Free shipping
-                </Badge>
+            <label
+              htmlFor="online"
+              className={`relative flex items-center gap-3 rounded-2xl border p-4 cursor-pointer transition-all ${
+                shippingMethod === "online"
+                  ? "border-foreground bg-foreground/[0.03]"
+                  : "border-border hover:border-foreground/30"
+              }`}
+            >
+              <div
+                className={`flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full border transition-all ${
+                  shippingMethod === "online"
+                    ? "border-foreground bg-foreground"
+                    : "border-muted-foreground/40"
+                }`}
+              >
+                {shippingMethod === "online" && (
+                  <Check className="h-3 w-3 text-background" strokeWidth={3} />
+                )}
               </div>
-              <div className="flex flex-wrap items-center gap-3 mt-2">
-                <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
-                  <Zap className="h-3 w-3" /> Save ₹{COD_CHARGE} instantly
-                </span>
-                <span className="flex items-center gap-1 text-xs text-blue-600">
-                  <Truck className="h-3 w-3" /> Arrives {onlineDeliveryLabel}
-                </span>
+              <RadioGroupItem value="online" id="online" className="sr-only" />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium">Prepaid</span>
+                  <span className="text-xs font-medium text-emerald-600">
+                    Free shipping
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <Truck className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">
+                    Arrives {onlineDeliveryLabel}
+                  </span>
+                </div>
               </div>
-            </div>
-          </div>
+            </label>
 
-          <div
-            className={`flex items-start gap-3 rounded-xl border-2 p-4 cursor-pointer transition-all ${
-              shippingMethod === "cod"
-                ? "border-orange-400 bg-orange-50"
-                : "border-muted hover:border-primary/50"
-            }`}
-            onClick={() => setShippingMethod("cod")}
-          >
-            <RadioGroupItem value="cod" id="cod" className="mt-0.5 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <Label htmlFor="cod" className="font-semibold cursor-pointer">
-                  Cash on Delivery
-                </Label>
-                <Badge className="text-orange-800 border-orange-200 bg-orange-100 text-xs px-2 py-0.5 rounded-full">
-                  +₹{COD_CHARGE} extra
-                </Badge>
+            <label
+              htmlFor="cod"
+              className={`relative flex items-center gap-3 rounded-2xl border p-4 cursor-pointer transition-all ${
+                shippingMethod === "cod"
+                  ? "border-foreground bg-foreground/[0.03]"
+                  : "border-border hover:border-foreground/30"
+              }`}
+            >
+              <div
+                className={`flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full border transition-all ${
+                  shippingMethod === "cod"
+                    ? "border-foreground bg-foreground"
+                    : "border-muted-foreground/40"
+                }`}
+              >
+                {shippingMethod === "cod" && (
+                  <Check className="h-3 w-3 text-background" strokeWidth={3} />
+                )}
               </div>
-              <p className="text-xs text-muted-foreground mt-1.5">
-                Pay when you receive · Arrives {codDeliveryLabel}
-              </p>
-            </div>
-          </div>
-        </RadioGroup>
+              <RadioGroupItem value="cod" id="cod" className="sr-only" />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium">Cash on delivery</span>
+                  <span className="text-xs font-medium text-muted-foreground">
+                    +₹{COD_CHARGE}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Arrives {codDeliveryLabel}
+                </p>
+              </div>
+            </label>
+          </RadioGroup>
+        </div>
 
         {shoeCleanerAddon && (
           <ShoeCleanerAddon
@@ -169,10 +179,9 @@ export function PaymentStep({
 
         <Button
           onClick={onContinue}
-          className="w-full h-12 text-lg font-semibold mt-6 flex items-center gap-2"
-          size="lg"
+          className="w-full h-12 text-sm font-medium rounded-md flex items-center gap-2"
         >
-          Continue to Details <ArrowRight className="h-4 w-4" />
+          Continue <ArrowRight className="h-4 w-4" />
         </Button>
       </CardContent>
     </Card>

@@ -1,3 +1,4 @@
+// checkout-form.tsx
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,8 +20,6 @@ interface CustomerDetailsFormProps {
   handleInputChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => void;
-  // Both optional so this form still works in places that only validate
-  // on submit (no per-field errors) rather than on blur.
   handleInputBlur?: (
     e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => void;
@@ -37,6 +36,13 @@ function FieldError({ message }: { message?: string }) {
   );
 }
 
+const labelClass = "text-xs font-medium text-muted-foreground";
+const inputClass = (hasError: boolean) =>
+  cn(
+    "mt-1.5 h-11 rounded-xl border-border bg-muted/30 focus-visible:bg-background transition-colors",
+    hasError && "border-red-400 bg-red-50/50 focus-visible:ring-red-400"
+  );
+
 export const CustomerDetailsForm = ({
   customerDetails,
   handleInputChange,
@@ -45,39 +51,29 @@ export const CustomerDetailsForm = ({
 }: CustomerDetailsFormProps) => {
   const errorFor = (field: string) => getFieldError?.(field);
 
-  const fieldClass = (field: string) =>
-    cn(
-      "mt-1",
-      errorFor(field) && "border-red-500 focus-visible:ring-red-500"
-    );
-
   return (
     <div className="space-y-4">
-      {/* Name */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div>
-          <Label htmlFor="name">
-            Full Name <span className="text-red-500">*</span>
-          </Label>
-          <Input
-            id="name"
-            name="name"
-            placeholder="Enter your full name"
-            value={customerDetails.name}
-            onChange={handleInputChange}
-            onBlur={handleInputBlur}
-            aria-invalid={!!errorFor("name")}
-            className={fieldClass("name")}
-          />
-          <FieldError message={errorFor("name")} />
-        </div>
+      <div>
+        <Label htmlFor="name" className={labelClass}>
+          Full name *
+        </Label>
+        <Input
+          id="name"
+          name="name"
+          placeholder="Enter your full name"
+          value={customerDetails.name}
+          onChange={handleInputChange}
+          onBlur={handleInputBlur}
+          aria-invalid={!!errorFor("name")}
+          className={inputClass(!!errorFor("name"))}
+        />
+        <FieldError message={errorFor("name")} />
       </div>
 
-      {/* Contact Numbers */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <Label htmlFor="contact1">
-            Primary Phone <span className="text-red-500">*</span>
+          <Label htmlFor="contact1" className={labelClass}>
+            Primary phone *
           </Label>
           <Input
             id="contact1"
@@ -88,12 +84,14 @@ export const CustomerDetailsForm = ({
             onChange={handleInputChange}
             onBlur={handleInputBlur}
             aria-invalid={!!errorFor("contact1")}
-            className={fieldClass("contact1")}
+            className={inputClass(!!errorFor("contact1"))}
           />
           <FieldError message={errorFor("contact1")} />
         </div>
         <div>
-          <Label htmlFor="contact2">Secondary Phone (Optional)</Label>
+          <Label htmlFor="contact2" className={labelClass}>
+            Secondary phone
+          </Label>
           <Input
             id="contact2"
             name="contact2"
@@ -103,15 +101,16 @@ export const CustomerDetailsForm = ({
             onChange={handleInputChange}
             onBlur={handleInputBlur}
             aria-invalid={!!errorFor("contact2")}
-            className={fieldClass("contact2")}
+            className={inputClass(!!errorFor("contact2"))}
           />
           <FieldError message={errorFor("contact2")} />
         </div>
       </div>
 
-      {/* Instagram */}
       <div>
-        <Label htmlFor="instagramId">Instagram Username (Optional)</Label>
+        <Label htmlFor="instagramId" className={labelClass}>
+          Instagram username
+        </Label>
         <Input
           id="instagramId"
           name="instagramId"
@@ -119,31 +118,34 @@ export const CustomerDetailsForm = ({
           value={customerDetails.instagramId}
           onChange={handleInputChange}
           onBlur={handleInputBlur}
-          className="mt-1"
+          className={inputClass(false)}
         />
       </div>
 
-      {/* Address */}
       <div>
-        <Label htmlFor="address">
-          Complete Address <span className="text-red-500">*</span>
+        <Label htmlFor="address" className={labelClass}>
+          Complete address *
         </Label>
         <Textarea
           id="address"
           name="address"
-          placeholder="House no, Building, Street, Area"
+          placeholder="House no, building, street, area"
           value={customerDetails.address}
           onChange={handleInputChange}
           onBlur={handleInputBlur}
           aria-invalid={!!errorFor("address")}
-          className={cn("min-h-[80px]", fieldClass("address"))}
+          className={cn(
+            "mt-1.5 min-h-[80px] rounded-xl border-border bg-muted/30 focus-visible:bg-background transition-colors",
+            errorFor("address") && "border-red-400 bg-red-50/50 focus-visible:ring-red-400"
+          )}
         />
         <FieldError message={errorFor("address")} />
       </div>
 
-      {/* Landmark */}
       <div>
-        <Label htmlFor="landmark">Landmark (Optional)</Label>
+        <Label htmlFor="landmark" className={labelClass}>
+          Landmark
+        </Label>
         <Input
           id="landmark"
           name="landmark"
@@ -151,15 +153,14 @@ export const CustomerDetailsForm = ({
           value={customerDetails.landmark}
           onChange={handleInputChange}
           onBlur={handleInputBlur}
-          className="mt-1"
+          className={inputClass(false)}
         />
       </div>
 
-      {/* District & State */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <Label htmlFor="district">
-            District <span className="text-red-500">*</span>
+          <Label htmlFor="district" className={labelClass}>
+            District *
           </Label>
           <Input
             id="district"
@@ -169,13 +170,13 @@ export const CustomerDetailsForm = ({
             onChange={handleInputChange}
             onBlur={handleInputBlur}
             aria-invalid={!!errorFor("district")}
-            className={fieldClass("district")}
+            className={inputClass(!!errorFor("district"))}
           />
           <FieldError message={errorFor("district")} />
         </div>
         <div>
-          <Label htmlFor="state">
-            State <span className="text-red-500">*</span>
+          <Label htmlFor="state" className={labelClass}>
+            State *
           </Label>
           <Input
             id="state"
@@ -185,16 +186,15 @@ export const CustomerDetailsForm = ({
             onChange={handleInputChange}
             onBlur={handleInputBlur}
             aria-invalid={!!errorFor("state")}
-            className={fieldClass("state")}
+            className={inputClass(!!errorFor("state"))}
           />
           <FieldError message={errorFor("state")} />
         </div>
       </div>
 
-      {/* Pincode */}
       <div>
-        <Label htmlFor="pincode">
-          Pincode <span className="text-red-500">*</span>
+        <Label htmlFor="pincode" className={labelClass}>
+          Pincode *
         </Label>
         <Input
           id="pincode"
@@ -205,7 +205,7 @@ export const CustomerDetailsForm = ({
           onChange={handleInputChange}
           onBlur={handleInputBlur}
           aria-invalid={!!errorFor("pincode")}
-          className={fieldClass("pincode")}
+          className={inputClass(!!errorFor("pincode"))}
         />
         <FieldError message={errorFor("pincode")} />
       </div>

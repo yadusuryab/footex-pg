@@ -1,4 +1,3 @@
-import { Card, CardContent } from "@/components/ui/card";
 import { Truck, Flame, SprayCan } from "lucide-react";
 import Link from "next/link";
 import { formatDeliveryDate } from "@/lib/checkout-utils";
@@ -32,82 +31,82 @@ export function OrderSummary({
   totalAmount: number;
 }) {
   return (
-    <Card className="mt-6">
-      <CardContent className="pt-6">
-        <div className="space-y-3">
-          <div className="flex justify-between text-sm">
-            <span>Base Price (2 Pairs)</span>
-            <span>₹{BASE_PRICE}</span>
+    <div className="mt-6 rounded-2xl bg-muted/40 p-5">
+      <div className="space-y-2.5">
+        <div className="flex justify-between text-sm">
+          <span className="text-muted-foreground">Base price (2 pairs)</span>
+          <span>₹{BASE_PRICE}</span>
+        </div>
+        {pair1Extra > 0 && (
+          <div className="flex justify-between text-xs text-muted-foreground pl-3">
+            <span>Extra — Pair 1</span>
+            <span>+₹{pair1Extra}</span>
           </div>
-          {pair1Extra > 0 && (
-            <div className="flex justify-between text-sm text-muted-foreground ml-4">
-              <span>Extra – Pair 1</span>
-              <span>+₹{pair1Extra}</span>
-            </div>
-          )}
-          {pair2Extra > 0 && (
-            <div className="flex justify-between text-sm text-muted-foreground ml-4">
-              <span>Extra – Pair 2</span>
-              <span>+₹{pair2Extra}</span>
-            </div>
-          )}
-          {freeSocksOffer && (
-            <div className="flex justify-between text-sm">
-              <span className="flex items-center gap-1">
-                <Flame className="h-3.5 w-3.5 text-orange-500" /> Flame Socks
-              </span>
-              <span className="text-green-600 font-semibold">FREE</span>
-            </div>
-          )}
-          {shoeCleanerAddon && addShoeCleaner && (
-            <div className="flex justify-between text-sm">
-              <span className="flex items-center gap-1">
-                <SprayCan className="h-3.5 w-3.5 text-blue-500" /> Shoe Cleaner{" "}
-              </span>
-              <span>+₹{SHOE_CLEANER_PRICE}</span>
-            </div>
-          )}
-          <div className="flex justify-between text-sm">
-            <span>Shipping</span>
-            {shippingMethod === "online" ? (
-              <span className="text-green-600 font-semibold">
-                🎁 FREE SHIPPING
-              </span>
-            ) : (
-              <span>₹{COD_CHARGE}</span>
-            )}
+        )}
+        {pair2Extra > 0 && (
+          <div className="flex justify-between text-xs text-muted-foreground pl-3">
+            <span>Extra — Pair 2</span>
+            <span>+₹{pair2Extra}</span>
           </div>
-          <div className="rounded-2xl bg-muted/60 px-6 py-6 flex flex-col items-center text-center gap-2">
-            <Truck className="h-8 w-8 text-foreground/80" strokeWidth={1.5} />
+        )}
+        {freeSocksOffer && (
+          <div className="flex justify-between text-sm">
+            <span className="flex items-center gap-1.5 text-muted-foreground">
+              <Flame className="h-3.5 w-3.5" /> Flame socks
+            </span>
+            <span className="font-medium">Free</span>
+          </div>
+        )}
+        {shoeCleanerAddon && addShoeCleaner && (
+          <div className="flex justify-between text-sm">
+            <span className="flex items-center gap-1.5 text-muted-foreground">
+              <SprayCan className="h-3.5 w-3.5" /> Shoe cleaner
+            </span>
+            <span>+₹{SHOE_CLEANER_PRICE}</span>
+          </div>
+        )}
+        <div className="flex justify-between text-sm">
+          <span className="text-muted-foreground">Shipping</span>
+          {shippingMethod === "online" ? (
+            <span className="font-medium">Free</span>
+          ) : (
+            <span>₹{COD_CHARGE}</span>
+          )}
+        </div>
+
+        <div className="rounded-xl bg-background p-4 flex items-center gap-3 mt-1">
+          <Truck className="h-5 w-5 text-muted-foreground shrink-0" strokeWidth={1.75} />
+          <div>
             <p className="text-xs font-medium text-foreground">
-              Expected Delivery by {formatDeliveryDate(activeDeliveryEnd)}
+              Arrives by {formatDeliveryDate(activeDeliveryEnd)}
             </p>
             <p className="text-xs text-muted-foreground">
-              Delivery Time :{" "}
               {shippingMethod === "online"
-                ? `${ONLINE_DELIVERY_MIN_DAYS} - ${ONLINE_DELIVERY_MAX_DAYS}`
-                : `${COD_DELIVERY_MIN_DAYS} - ${COD_DELIVERY_MAX_DAYS}`}{" "}
-              Working Days
+                ? `${ONLINE_DELIVERY_MIN_DAYS}–${ONLINE_DELIVERY_MAX_DAYS}`
+                : `${COD_DELIVERY_MIN_DAYS}–${COD_DELIVERY_MAX_DAYS}`}{" "}
+              working days
             </p>
-          </div>
-
-          <div className="border-t pt-3 flex justify-between font-bold text-base">
-            <span>Total Amount</span>
-            <span>₹{totalAmount}</span>
-          </div>
-          {shippingMethod === "cod" && (
-            <p className="text-xs text-orange-600 text-center">
-              💡 Switch to Online Payment to save ₹{COD_CHARGE}!
-            </p>
-          )}
-          <div className="border-t pt-3 text-xs text-muted-foreground">
-            By placing this order, you agree to the{" "}
-            <Link href="/T&C" className="text-primary hover:underline">
-              Terms and Conditions
-            </Link>
           </div>
         </div>
-      </CardContent>
-    </Card>
+
+        <div className="border-t border-border/60 pt-3 flex justify-between font-semibold text-base">
+          <span>Total</span>
+          <span>₹{totalAmount}</span>
+        </div>
+
+        {shippingMethod === "cod" && (
+          <p className="text-xs text-muted-foreground text-center">
+            Switch to prepaid to save ₹{COD_CHARGE}
+          </p>
+        )}
+
+        <div className="border-t border-border/60 pt-3 text-xs text-muted-foreground">
+          By placing this order, you agree to the{" "}
+          <Link href="/T&C" className="text-foreground underline underline-hover">
+            Terms and Conditions
+          </Link>
+        </div>
+      </div>
+    </div>
   );
 }

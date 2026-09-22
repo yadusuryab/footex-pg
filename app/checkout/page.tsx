@@ -380,19 +380,20 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
     return <EmptyCart isInvalid={cartItems.length > 0} />;
   }
 
+// page.tsx — only the JSX return changed, all logic above is identical to last version
   return (
-    <main className="container mx-auto px-4 max-w-2xl min-h-screen pb-24">
+    <main className="container mx-auto px-4 max-w-2xl min-h-screen pb-28">
       <Script
         src="https://checkout.razorpay.com/v1/checkout.js"
         onLoad={() => setRazorpayReady(true)}
         onError={() => setRazorpayReady(false)}
       />
 
-      <div className="py-4">
+      <div className="py-6">
         <StepProgress currentStep={currentStep} />
 
         {formErrors.length > 0 && (
-          <Alert variant="destructive" className="mb-4">
+          <Alert variant="destructive" className="mb-4 rounded-xl">
             <AlertDescription>
               <ul className="list-disc list-inside space-y-1">
                 {formErrors.map((e, i) => (
@@ -418,22 +419,18 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
             onContinue={goToDetailsStep}
           />
         ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5" /> Delivery Information
-              </CardTitle>
-              <CardDescription>Enter your details for order delivery</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <CustomerDetailsForm
-                customerDetails={customerDetails}
-                handleInputChange={handleInputChange}
-                handleInputBlur={handleInputBlur}
-                getFieldError={getFieldError}
-              />
-            </CardContent>
-          </Card>
+          <div>
+            <h2 className="text-base font-semibold mb-1">Delivery details</h2>
+            <p className="text-sm text-muted-foreground mb-5">
+              Enter your details for order delivery
+            </p>
+            <CustomerDetailsForm
+              customerDetails={customerDetails}
+              handleInputChange={handleInputChange}
+              handleInputBlur={handleInputBlur}
+              getFieldError={getFieldError}
+            />
+          </div>
         )}
 
         <OrderSummary
@@ -448,35 +445,34 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
         />
 
         {isCod && (
-          <p className="text-sm text-muted-foreground mt-2 text-center">
-            ₹{COD_ADVANCE_AMOUNT} advance now, ₹{remainingAmount} on delivery.
+          <p className="text-xs text-muted-foreground mt-3 text-center">
+            ₹{COD_ADVANCE_AMOUNT} advance now, ₹{remainingAmount} on delivery
           </p>
         )}
       </div>
 
-      {freeSocksOffer && (
-        <div className="fixed bottom-24 right-4 z-40 flex items-center gap-1.5 rounded-full bg-gradient-to-r from-red-600 via-orange-500 to-yellow-400 text-white text-xs font-bold px-3 py-2 shadow-lg ring-2 ring-yellow-300 animate-bounce">
-          Free Socks 🎉
+      {/* {freeSocksOffer && (
+        <div className="fixed bottom-24 right-4 z-40 flex items-center gap-1.5 rounded-full bg-foreground text-background text-xs font-medium px-3 py-2 shadow-lg">
+          Free socks included
         </div>
-      )}
+      )} */}
 
       {currentStep === "details" && (
-        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t p-4">
+        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t py-2">
           <div className="container mx-auto px-4 max-w-2xl">
             <Button
               onClick={handleRazorpayPayment}
               disabled={isLoading}
-              className="w-full h-12 text-lg font-semibold flex items-center gap-2"
-              size="lg"
+              className="w-full h-12 text-sm font-medium rounded-md flex items-center gap-2"
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="h-5 w-5 animate-spin" /> Processing...
+                  <Loader2 className="h-4 w-4 animate-spin" /> Processing...
                 </>
               ) : isCod ? (
-                `Pay ₹${COD_ADVANCE_AMOUNT} Advance`
+                `Pay ₹${COD_ADVANCE_AMOUNT} advance`
               ) : (
-                `Pay Now – ₹${totalAmount}`
+                `Pay now — ₹${totalAmount}`
               )}
             </Button>
             {!isFormValid && (
@@ -485,7 +481,7 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
               </p>
             )}
             <p className="text-xs text-center text-muted-foreground mt-2">
-              Secure payment via Razorpay • Estimated delivery {activeDelivery.label}
+              Secure payment via Razorpay · Estimated delivery {activeDelivery.label}
             </p>
           </div>
         </div>

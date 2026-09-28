@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import Script from "next/script";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { CustomerDetailsForm } from "@/components/checkout/checkout-form";
 import { site } from "@/lib/site-config";
 import { client } from "@/sanityClient";
@@ -33,6 +31,8 @@ const COD_ADVANCE_AMOUNT = 300;
 
 const SITE_ORIGIN = "https://footex.in";
 
+const RAZORPAY_SRC = "https://checkout.razorpay.com/v1/checkout.js";
+
 const REQUIRED_FIELDS = ["name", "contact1", "address", "district", "state", "pincode"] as const;
 
 declare global {
@@ -40,6 +40,31 @@ declare global {
     Razorpay: any;
   }
 }
+
+const loadRazorpay = (): Promise<boolean> =>
+  new Promise((resolve) => {
+    if (typeof window === "undefined") return resolve(false);
+    if (window.Razorpay) return resolve(true);
+
+    const existing = document.querySelector<HTMLScriptElement>(
+      `script[src="${RAZORPAY_SRC}"]`,
+    );
+    if (existing) existing.remove(); // drop stale/failed tag before retrying
+
+    const timeout = setTimeout(() => resolve(false), 8000);
+    const s = document.createElement("script");
+    s.src = RAZORPAY_SRC;
+    s.async = true;
+    s.onload = () => {
+      clearTimeout(timeout);
+      resolve(!!window.Razorpay);
+    };
+    s.onerror = () => {
+      clearTimeout(timeout);
+      resolve(false);
+    };
+    document.body.appendChild(s);
+  });
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -66,7 +91,11 @@ export default function CheckoutPage() {
   const [freeSocksOffer, setFreeSocksOffer] = useState(false);
   const [shoeCleanerAddon, setShoeCleanerAddon] = useState(false);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
-  const [razorpayReady, setRazorpayReady] = useState(false);
+
+  // Preload Razorpay so it's usually ready before the click
+  useEffect(() => {
+    loadRazorpay();
+  }, []);
 
   useEffect(() => {
     try {
@@ -196,7 +225,7 @@ export default function CheckoutPage() {
   };
 
   // Shared shape for Meta Pixel content params, built from cart contents.
-  // Used only for the Purchase event now, fired on confirmed Razorpay
+  // Used only for the Purchase event, fired on confirmed Razorpay
   // payment success below.
   const buildPixelPayload = () => {
     const ids = [mainProduct?._id].filter(Boolean) as string[];
@@ -274,17 +303,16 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
       return next;
     });
 
-    if (!isFormValid) {
-      return;
-    }
-
-    if (!razorpayReady || typeof window.Razorpay === "undefined") {
-      redirectToWhatsAppFallback("Payment gateway is currently unavailable");
-      return;
-    }
+    if (!isFormValid) return;
 
     setIsLoading(true);
     setFormErrors([]);
+
+    const loaded = await loadRazorpay();
+    if (!loaded) {
+      redirectToWhatsAppFallback("Payment gateway is currently unavailable");
+      return;
+    }
 
     try {
       const orderRes = await fetch("/api/razorpay/order", {
@@ -348,10 +376,7 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
             // eventID = payment_id for dedup against any server-side CAPI event.
             fbEvent(
               "Purchase",
-              {
-                ...buildPixelPayload(),
-                value: paymentAmount,
-              },
+              { ...buildPixelPayload(), value: paymentAmount },
               response.razorpay_payment_id,
             );
 
@@ -371,7 +396,7 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
         redirectToWhatsAppFallback("Your payment failed");
       });
       rzp.open();
-    } catch (err) {
+    } catch {
       redirectToWhatsAppFallback("We couldn't start the payment");
     }
   };
@@ -380,15 +405,8 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
     return <EmptyCart isInvalid={cartItems.length > 0} />;
   }
 
-// page.tsx — only the JSX return changed, all logic above is identical to last version
   return (
     <main className="container mx-auto px-4 max-w-2xl min-h-screen pb-28">
-      <Script
-        src="https://checkout.razorpay.com/v1/checkout.js"
-        onLoad={() => setRazorpayReady(true)}
-        onError={() => setRazorpayReady(false)}
-      />
-
       <div className="py-6">
         <StepProgress currentStep={currentStep} />
 
@@ -450,12 +468,6 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
           </p>
         )}
       </div>
-
-      {/* {freeSocksOffer && (
-        <div className="fixed bottom-24 right-4 z-40 flex items-center gap-1.5 rounded-full bg-foreground text-background text-xs font-medium px-3 py-2 shadow-lg">
-          Free socks included
-        </div>
-      )} */}
 
       {currentStep === "details" && (
         <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t py-2">

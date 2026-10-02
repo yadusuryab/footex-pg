@@ -1,32 +1,62 @@
+// app/api/razorpay/webhook/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { finalizeOrder } from "@/lib/server/finalize-order";
+import { serverClient } from "@/lib/sanity-server";
 
-export async function POST(request: NextRequest) {
-  const raw = await request.text();
-  const sig = request.headers.get("x-razorpay-signature") || "";
+export async function POST(req: NextRequest) {
+  const raw = await req.text();
+  const signature = req.headers.get("x-razorpay-signature") || "";
+
   const expected = crypto
-    .createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET as string)
+    .createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET!)
     .update(raw)
     .digest("hex");
 
-  if (sig.length !== expected.length ||
-      !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) {
-    return NextResponse.json({ ok: false }, { status: 400 });
+  if (expected !== signature) {
+    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  try {
-    const event = JSON.parse(raw);
-    if (event.event === "order.paid" || event.event === "payment.captured") {
-      const pay = event.payload?.payment?.entity;
-      if (pay?.order_id) {
-        const order = await finalizeOrder(pay.order_id, pay.id);
-        if (!order) throw new Error(`No pending order for ${pay.order_id}`);
-      }
-    }
+  const event = JSON.parse(raw);
+  const payment = event?.payload?.payment?.entity;
+  const razorpayOrderId = payment?.order_id;
+  const razorpayPaymentId = payment?.id;
+
+  if (!razorpayOrderId) {
     return NextResponse.json({ ok: true });
-  } catch (e) {
-    console.error("Webhook error:", e);
-    return NextResponse.json({ ok: false }, { status: 500 }); // Razorpay retries for ~24h
   }
+
+  const order = await serverClient.fetch(
+    `*[_type == "order" && razorpayOrderId == $rid][0]{ _id, status }`,
+    { rid: razorpayOrderId }
+  );
+
+  if (!order) {
+    console.warn("[webhook] No Sanity order for", razorpayOrderId);
+    return NextResponse.json({ ok: true });
+  }
+
+  if (event.event === "payment.captured" && order.status !== "paid") {
+    await serverClient
+      .patch(order._id)
+      .set({
+        status: "paid",
+        razorpayPaymentId,
+        paidAt: new Date().toISOString(),
+        paidVia: "webhook",
+      })
+      .commit();
+  }
+
+  if (event.event === "payment.failed") {
+    await serverClient
+      .patch(order._id)
+      .set({
+        status: "payment_failed",
+        razorpayPaymentId,
+        failedAt: new Date().toISOString(),
+      })
+      .commit();
+  }
+
+  return NextResponse.json({ ok: true });
 }

@@ -30,15 +30,15 @@ export default function Home() {
         <Hero />
       </div>
       {freeSocksOffer && (
-        <div className="px-4 my-2">
+        <div className="px-4 my-2 md:max-w-[400px] w-full mx-auto ">
           <FreeSocksPromo />
         </div>
       )}
-      <div className="px-4 mt-4 ">
+        <div className="px-4 my-2 md:max-w-[400px] w-full mx-auto ">
         <OrderTrackCTA />
       </div>
 
-      <div className="px-4 my-8">
+        <div className="px-4 my-2 md:max-w-[400px] w-full mx-auto ">
         <ReviewsBento />
       </div>
       <ShopVideo />

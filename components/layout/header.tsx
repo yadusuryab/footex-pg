@@ -97,7 +97,7 @@ const Header = () => {
           marqueeHidden ? "top-0" : "top-7 sm:top-8"
         }`}
       >
-        <div className="relative flex items-center justify-end p-3 px-4 sm:p-4 sm:px-6">
+        <div className="relative flex items-center mx-auto justify-end p-3 px-4 sm:p-4 sm:px-6">
           <div className="pointer-events-none absolute inset-0 overflow-hidden">
             {stars.map((_, index) => (
               <span
@@ -141,21 +141,21 @@ const Header = () => {
               target="_blank"
               rel="noopener noreferrer"
             >
-            <Button
-  size="icon"
-  className="bg-transparent hover:bg-transparent text-white"
-  aria-label="Follow us on Instagram"
->
-  <span
-    className="
+              <Button
+                size="icon"
+                className="bg-transparent hover:bg-transparent text-white"
+                aria-label="Follow us on Instagram"
+              >
+                <span
+                  className="
       block
       w-8 h-8
       bg-white
       [mask:url('/insta.png')_center/contain_no-repeat]
       [-webkit-mask:url('/insta.png')_center/contain_no-repeat]
     "
-  />
-</Button>
+                />
+              </Button>
             </Link>
             {/* <Link
               href={`https://wa.me/${site.phone}`}
@@ -174,7 +174,7 @@ const Header = () => {
           </div>
         </div>
         <div
-          className={`overflow-hidden transition-all duration-500 ease-in-out ${
+          className={`overflow-hidden md:max-w-[400px] mx-auto transition-all duration-500 ease-in-out ${
             marqueeHidden
               ? "max-h-0 opacity-0 -translate-y-2 pointer-events-none"
               : "max-h-40 opacity-100 translate-y-0"
@@ -193,7 +193,6 @@ const Header = () => {
         }`}
       >
         <Button
-         
           size="icon"
           className="w-8 h-8 bg-primary/0 text-white border-white border-1 rounded-md relative pointer-events-auto"
           aria-label={menuOpen ? "Close menu" : "Open menu"}
@@ -274,7 +273,7 @@ const Header = () => {
       </div>
 
       {/* ✅ Spacer accounts for marquee + header */}
-      <div className="h-42 sm:h-28" />
+      <div className="h-42 md:h-52 sm:h-28" />
     </>
   );
 };

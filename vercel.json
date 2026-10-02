@@ -1,1 +1,0 @@
-{ "crons": [{ "path": "/api/razorpay/reconcile", "schedule": "*/10 * * * *" }] }

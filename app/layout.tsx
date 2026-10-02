@@ -21,7 +21,7 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   title: {
     default: site.name,
-    template: `%s | ${site.name}` // ✅ Better SEO
+    template: `%s | ${site.name}`, // ✅ Better SEO
   },
   description: "Buy quality products at affordable price.",
   keywords: ["shoes", "footwear", "fashion", "affordable"], // ✅ Added for SEO
@@ -37,28 +37,43 @@ export default function RootLayout({
       <head>
         {/* ✅ OPTIMIZED: Preconnect to critical domains */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin=""
+        />
+
         {/* ✅ OPTIMIZED: Add favicon links */}
         <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" href="/icon?<generated>" type="image/<generated>" sizes="<generated>" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon?<generated>" type="image/<generated>" sizes="<generated>" />
+        <link
+          rel="icon"
+          href="/icon?<generated>"
+          type="image/<generated>"
+          sizes="<generated>"
+        />
+        <link
+          rel="apple-touch-icon"
+          href="/apple-touch-icon?<generated>"
+          type="image/<generated>"
+          sizes="<generated>"
+        />
       </head>
-       <MetaPixel />
-      
-      <body className={`${poppins.className} antialiased`}>
+      <MetaPixel />
+
+      <body className={`${poppins.className} antialiased `}>
         {/* ✅ OPTIMIZED: Consider lazy loading non-critical components */}
         <Header />
-        <main className="py-5 min-h-screen"> {/* ✅ Added main tag for semantics */}
+        <main className="py-0 min-h-screen">
+          {" "}
+          {/* ✅ Added main tag for semantics */}
           {children}
-          <WhatsAppButton/>
-         
-</main>
+          <WhatsAppButton />
+        </main>
         <Footer />
         <Toaster />
-        
+
         {/* ✅ OPTIMIZED: Load GTM only in production */}
-        {process.env.NODE_ENV === 'production' && <GoogleTagManager />}
+        {process.env.NODE_ENV === "production" && <GoogleTagManager />}
       </body>
     </html>
   );

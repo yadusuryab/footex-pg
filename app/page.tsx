@@ -24,31 +24,24 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="flex py-0 px-4 flex-col min-h-screen">
+    <div className="flex py-0  flex-col min-h-screen">
+      <div className="mb-4"></div>
       <div className="relative overflow-hidden">
-       
-          <Hero />
-        
+        <Hero />
       </div>
-        <div className="px-4 my-8">
-        <ProductCardWithSale />
-      </div>
-<div className="px-4 mt-4 ">
-        <OrderTrackCTA/>
-    </div>
       {freeSocksOffer && (
-        <div className="px-4 my-8">
+        <div className="px-4 my-2">
           <FreeSocksPromo />
         </div>
       )}
-    
+      <div className="px-4 mt-4 ">
+        <OrderTrackCTA />
+      </div>
 
       <div className="px-4 my-8">
         <ReviewsBento />
       </div>
-      <ShopVideo/>
-
-     
+      <ShopVideo />
 
       {/* <BrandStory /> */}
     </div>

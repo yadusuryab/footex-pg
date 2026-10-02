@@ -1,12 +1,18 @@
-// components/sections/shop-video.tsx
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Volume2, VolumeX, CheckCircle, Shield, Star } from "lucide-react";
 
 export function ShopVideo() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(true);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = true;
+    v.play().catch(() => {});
+  }, []);
 
   const toggleMute = () => {
     if (!videoRef.current) return;
@@ -19,27 +25,27 @@ export function ShopVideo() {
       <div className="relative w-full max-w-[340px] aspect-[9/16] rounded-[2rem] overflow-hidden shadow-2xl bg-black ring-1 ring-black/10">
         <video
           ref={videoRef}
-          src="/v2.mov"
+          poster="/v2-poster.jpg"
           autoPlay
           loop
-          muted={muted}
+          muted
           playsInline
+          preload="metadata"
           className="h-full w-full object-cover"
-        />
+        >
+          <source src="/v2.mp4" type="video/mp4" />
+        </video>
 
-        {/* Trust Badge - Top Left */}
         <div className="absolute top-4 left-4 flex items-center gap-1.5 rounded-full bg-black/60 backdrop-blur-sm px-3 py-1.5 text-white text-xs font-medium">
           <Shield className="h-3.5 w-3.5" />
           <span>Verified</span>
         </div>
 
-        {/* Trust Badge - Top Right */}
         <div className="absolute top-4 right-4 flex items-center gap-1 rounded-full bg-amber-500/90 backdrop-blur-sm px-3 py-1.5 text-white text-xs font-medium">
           <Star className="h-3.5 w-3.5 fill-white" />
           <span>4.9 ★</span>
         </div>
 
-        {/* About Overlay - Bottom */}
         <div className="absolute bottom-16 left-0 right-0 px-4">
           <div className="rounded-xl bg-black/60 backdrop-blur-sm p-3 text-white">
             <p className="text-xs font-medium leading-relaxed opacity-90">
@@ -66,9 +72,6 @@ export function ShopVideo() {
           {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
         </button>
       </div>
-
-      {/* Additional Trust Section Below Video */}
-    
     </section>
   );
 }

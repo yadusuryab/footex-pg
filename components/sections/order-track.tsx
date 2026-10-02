@@ -11,18 +11,19 @@ import { Truck, ArrowRight } from "lucide-react";
  */
 export function OrderTrackCTA() {
   return (
-    <Link
+   <div className="p-2 bg-gray-200 rounded-2xl">
+     <Link
       href="/order/track"
-      className="group relative flex w-full max-w-xl mx-auto overflow-hidden rounded-2xl bg-primary shadow-[0_1px_0_0_rgba(27,39,51,0.08)] ring-1 ring-[#1B2733]/10 transition-transform duration-200 hover:-translate-y-0.5"
+      className="group relative flex w-full max-w-xl mx-auto  overflow-hidden rounded-2xl bg-gradient-to-r from-blue-500 to-violet-600 shadow-[0_1px_0_0_rgba(27,39,51,0.08)] ring-1 ring-[#1B2733]/10 transition-transform duration-200 hover:-translate-y-0.5"
     >
       {/* Stub side */}
-      <div className="relative flex flex-col items-center justify-center gap-2 bg-secondary px-5 py-6 sm:px-6">
+      <div className="relative flex flex-col items-center justify-center gap-2 k px-5 py-1 sm:px-6">
         <Truck className="h-6 w-6 text-[#EFE9DA]" strokeWidth={1.75} />
         <span
-          className="text-[10px] tracking-[0.14em]  text-[#EFE9DA]/60"
+          className="text-[10px] font-semibold  text-white"
           style={{ writingMode: "vertical-rl" }}
         >
-          IN TRANSIT
+          TRACK ORDER
         </span>
 
         {/* Perforation */}
@@ -36,28 +37,29 @@ export function OrderTrackCTA() {
           />
         </div>
         {/* Notches */}
-        <div className="absolute -top-2 right-[-8px] h-4 w-4 rounded-full bg-white" />
-        <div className="absolute -bottom-2 right-[-8px] h-4 w-4 rounded-full bg-white" />
+        <div className="absolute -top-2 right-[-8px] h-4 w-4 rounded-full bg-gray-200" />
+        <div className="absolute -bottom-2 right-[-8px] h-4 w-4 rounded-full bg-gray-200" />
       </div>
 
       {/* Main side */}
-      <div className="flex flex-1 items-center justify-between gap-4 px-5 py-6 sm:px-7">
+      <div className="flex flex-1 items-center justify-between gap-4 px-5 py-3 sm:px-7">
         <div className="min-w-0">
-          <p className="font-bold text-[11px] tracking-wide text-[#C1502E]">
+          <p className="font-bold bg-white w-fit px-1.5 py-0.5 rounded-md text-[10px] tracking-tight text-black ">
+            TRACK PACKAGE
+          </p>
+          <p className="mt-1 text-lg font-semibold text-white sm:text-xl">
             WHERE&apos;S MY ORDER?
           </p>
-          <p className="mt-1 text-lg font-semibold text-[#1B2733] sm:text-xl">
-            Track your package
-          </p>
-          <p className="mt-0.5 text-sm text-[#1B2733]/60">
+          <p className="mt-0.5 text-sm text-white/60">
             Live status, carrier updates, and delivery estimate.
           </p>
         </div>
 
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1B2733] text-[#EFE9DA] transition-transform duration-200 group-hover:translate-x-0.5">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-black transition-transform duration-200 group-hover:translate-x-0.5">
           <ArrowRight className="h-4 w-4" strokeWidth={2} />
         </span>
       </div>
     </Link>
+   </div>
   );
 }

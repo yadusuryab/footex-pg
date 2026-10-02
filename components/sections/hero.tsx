@@ -2,12 +2,11 @@
 
 import Poster2 from "@/public/p3.jpeg";
 import Link from "next/link";
-import { Button } from "../ui/button";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { IconSquareRoundedArrowRight } from "@tabler/icons-react";
 import { RainbowButton } from "../ui/rainbow-button";
 import { client } from "@/sanityClient";
+import { ArrowRight } from "lucide-react";
 
 type BannerData = {
   imageUrl: string;
@@ -28,7 +27,7 @@ export function Hero() {
           "imageUrl": image.asset->url,
           link,
           title
-        }`
+        }`,
       )
       .then((data) => setBanner(data))
       .catch(() => setBanner(null))
@@ -54,36 +53,48 @@ export function Hero() {
         className="block relative group"
         onClick={() => setIsLoading(true)}
       >
-        {/* Image Container with Skeleton */}
-        <div className="relative bg-gray-100 rounded-3xl overflow-hidden">
-          <Image
-            src={imageSrc}
-            alt={alt}
-            width={800}
-            height={400}
-            className={`w-full h-auto transition-opacity duration-300 ${
-              imageLoaded ? 'opacity-100' : 'opacity-0'
-            } ${isLoading ? 'opacity-70' : ''}`}
-            priority
-            quality={60}
-            sizes="(max-width: 640px) 95vw, (max-width: 1024px) 80vw, 600px"
-            onLoad={() => setImageLoaded(true)}
-          />
+        <div className="relative w-full bg-gradient-to-t from-blue-600  to-blue-500 p-2 rounded-3xl overflow-hidden">
+          {/* Image with skeleton */}
+          <div className="relative bg-gray-100 rounded-2xl overflow-hidden">
+            <Image
+              src={imageSrc}
+              alt={alt}
+              width={800}
+              height={400}
+              className={`w-full h-auto transition-opacity duration-300 ${
+                imageLoaded ? "opacity-100" : "opacity-0"
+              } ${isLoading ? "opacity-70" : ""}`}
+              priority
+              quality={60}
+              sizes="(max-width: 640px) 95vw, (max-width: 1024px) 80vw, 600px"
+              onLoad={() => setImageLoaded(true)}
+            />
 
-          {!imageLoaded && (
-            <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
-              <div className="w-8 h-8 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-            </div>
-          )}
-        </div>
+            {!imageLoaded && (
+              <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
+                <div className="w-8 h-8 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+          </div>
 
-        <div className="mt-2">
-          <RainbowButton className=" w-full rounded-xl bg-black text-white transition-colors
-            h-12 sm:h-14 md:h-16
-            text-base sm:text-lg md:text-xl" size={'lg'} >
-            Claim offer
-            <IconSquareRoundedArrowRight/>
-          </RainbowButton>
+          {/* Combined CTA: text + arrow, full width */}
+          <div className="mt-2 flex w-full items-stretch overflow-hidden rounded-xl">
+            <RainbowButton
+              type="button"
+              size="lg"
+              className="h-12 sm:h-14 md:h-16 flex-1 min-w-0 rounded-none rounded-l-full text-xl text-white border-r border-white/30"
+            >
+              Claim offer
+            </RainbowButton>
+            <RainbowButton
+              type="button"
+              size="lg"
+              aria-label="Claim offer"
+              className="h-12 sm:h-14 md:h-16 aspect-square shrink-0 px-0 rounded-none rounded-r-full text-white"
+            >
+              <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6" />
+            </RainbowButton>
+          </div>
         </div>
 
         {isLoading && (

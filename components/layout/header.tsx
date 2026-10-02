@@ -14,6 +14,7 @@ import { site } from "@/lib/site-config";
 import Brand from "../brand/brand";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
+import { ProductCardWithSale } from "../sections/sale-is-live";
 
 // ✅ OPTIMIZED: Lazy load brand component with smaller fallback
 
@@ -35,6 +36,7 @@ const SCROLL_HIDE_THRESHOLD = 40;
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [marqueeHidden, setMarqueeHidden] = useState(false);
+  const stars = Array.from({ length: 14 });
 
   // ✅ Lock body scroll while the full-page menu is open
   useEffect(() => {
@@ -66,7 +68,7 @@ const Header = () => {
     <>
       {/* Marquee Bar — slides up + fades out smoothly on scroll */}
       <div
-        className={`fixed top-0 z-50 w-full h-7 sm:h-8 bg-secondary text-white overflow-hidden flex items-center transition-all duration-500 ease-in-out ${
+        className={`fixed top-0 z-50 w-full h-7 sm:h-8 bg-primary text-white overflow-hidden flex items-center transition-all duration-500 ease-in-out ${
           marqueeHidden
             ? "-translate-y-full opacity-0"
             : "translate-y-0 opacity-100"
@@ -91,11 +93,34 @@ const Header = () => {
 
       {/* Main Header — moves up to top-0 once marquee is hidden */}
       <header
-        className={`fixed z-40 w-full transition-[top] duration-500 ease-in-out ${
+        className={`fixed relaitve z-40 w-full transition-[top] duration-500 ease-in-out bg-gradient-to-b from-primary via-[#fcd719] to-transparent ${
           marqueeHidden ? "top-0" : "top-7 sm:top-8"
         }`}
       >
-        <div className="relative flex items-center justify-end bg-primary/75 backdrop-blur-xl p-3 px-4 sm:p-4 sm:px-6">
+        <div className="relative flex items-center justify-end p-3 px-4 sm:p-4 sm:px-6">
+          <div className="pointer-events-none absolute inset-0 overflow-hidden">
+            {stars.map((_, index) => (
+              <span
+                key={index}
+                className="
+                absolute
+                bottom-[-8px]
+                h-1
+                w-1
+                rounded-full
+                bg-white
+                opacity-60
+                shadow-[0_0_6px_rgba(255,255,255,0.8)]
+                animate-star-rise
+              "
+                style={{
+                  left: `${(index * 37) % 100}%`,
+                  animationDelay: `${(index * 0.45) % 5}s`,
+                  animationDuration: `${4 + ((index * 1.3) % 4)}s`,
+                }}
+              />
+            ))}
+          </div>
           {/* ✅ Logo — absolutely centered, independent of left/right content widths */}
           <Link
             href="/"
@@ -116,16 +141,23 @@ const Header = () => {
               target="_blank"
               rel="noopener noreferrer"
             >
-              <Button
-                variant={"secondary"}
-                size="icon"
-                className="w-8 h-8 transition-transform hover:scale-110"
-                aria-label="Follow us on Instagram"
-              >
-                <IconBrandInstagram className="w-4 h-4" />
-              </Button>
+            <Button
+  size="icon"
+  className="bg-transparent hover:bg-transparent text-white"
+  aria-label="Follow us on Instagram"
+>
+  <span
+    className="
+      block
+      w-8 h-8
+      bg-white
+      [mask:url('/insta.png')_center/contain_no-repeat]
+      [-webkit-mask:url('/insta.png')_center/contain_no-repeat]
+    "
+  />
+</Button>
             </Link>
-            <Link
+            {/* <Link
               href={`https://wa.me/${site.phone}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -138,8 +170,17 @@ const Header = () => {
               >
                 <IconBrandWhatsapp className="w-4 h-4" />
               </Button>
-            </Link>
+            </Link> */}
           </div>
+        </div>
+        <div
+          className={`overflow-hidden transition-all duration-500 ease-in-out ${
+            marqueeHidden
+              ? "max-h-0 opacity-0 -translate-y-2 pointer-events-none"
+              : "max-h-40 opacity-100 translate-y-0"
+          }`}
+        >
+          <ProductCardWithSale />
         </div>
       </header>
 
@@ -152,9 +193,9 @@ const Header = () => {
         }`}
       >
         <Button
-          variant={"secondary"}
+         
           size="icon"
-          className="w-8 h-8 relative pointer-events-auto"
+          className="w-8 h-8 bg-primary/0 text-white border-white border-1 rounded-md relative pointer-events-auto"
           aria-label={menuOpen ? "Close menu" : "Open menu"}
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen((prev) => !prev)}
@@ -219,7 +260,7 @@ const Header = () => {
             >
               <IconBrandInstagram className="w-5 h-5" />
             </Link>
-            <Link
+            {/* <Link
               href={`https://wa.me/${site.phone}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -227,13 +268,13 @@ const Header = () => {
               className="text-white/80 hover:text-white transition-colors"
             >
               <IconBrandWhatsapp className="w-5 h-5" />
-            </Link>
+            </Link> */}
           </div>
         </div>
       </div>
 
       {/* ✅ Spacer accounts for marquee + header */}
-      <div className="h-24 sm:h-28" />
+      <div className="h-42 sm:h-28" />
     </>
   );
 };

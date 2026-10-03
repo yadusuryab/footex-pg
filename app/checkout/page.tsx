@@ -21,12 +21,16 @@ import {
   COD_DELIVERY_MAX_DAYS,
 } from "@/lib/checkout-constants";
 import { StepProgress } from "@/components/checkout/step-progress";
-import { CartItem, CheckoutStep, CustomerDetails } from "@/lib/types/checkout";
+import { CartItem } from "@/lib/types/checkout";
+import { CheckoutStep, CustomerDetails } from "@/lib/types/checkout";
 import { getExpectedDelivery } from "@/lib/checkout-utils";
 import { EmptyCart } from "@/components/checkout/empty-cart";
 import { PaymentStep } from "@/components/checkout/payment-step";
 
 const COD_ADVANCE_AMOUNT = 300;
+
+const SITE_ORIGIN = "https://footex.in";
+
 const RAZORPAY_SRC = "https://checkout.razorpay.com/v1/checkout.js";
 
 const REQUIRED_FIELDS = [
@@ -52,7 +56,7 @@ const loadRazorpay = (): Promise<boolean> =>
     const existing = document.querySelector<HTMLScriptElement>(
       `script[src="${RAZORPAY_SRC}"]`,
     );
-    if (existing) existing.remove();
+    if (existing) existing.remove(); // drop stale/failed tag before retrying
 
     const timeout = setTimeout(() => resolve(false), 8000);
     const s = document.createElement("script");
@@ -72,7 +76,9 @@ const loadRazorpay = (): Promise<boolean> =>
 export default function CheckoutPage() {
   const router = useRouter();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [shippingMethod, setShippingMethod] = useState<"online" | "cod">("online");
+  const [shippingMethod, setShippingMethod] = useState<"online" | "cod">(
+    "online",
+  );
   const [addShoeCleaner, setAddShoeCleaner] = useState(false);
   const [currentStep, setCurrentStep] = useState<CheckoutStep>("payment");
   const [customerDetails, setCustomerDetails] = useState<CustomerDetails>({
@@ -95,6 +101,7 @@ export default function CheckoutPage() {
   const [shoeCleanerAddon, setShoeCleanerAddon] = useState(false);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
 
+  // Preload Razorpay so it's usually ready before the click
   useEffect(() => {
     loadRazorpay();
   }, []);
@@ -134,11 +141,18 @@ export default function CheckoutPage() {
 
   const mainProduct = cartItems[0];
   const freeProduct = mainProduct?.freeProduct;
-  const pair1Extra = Math.max(0, (mainProduct?.price || BASE_PRICE) - BASE_PRICE);
-  const pair2Extra = Math.max(0, (freeProduct?.price || BASE_PRICE) - BASE_PRICE);
+  const pair1Extra = Math.max(
+    0,
+    (mainProduct?.price || BASE_PRICE) - BASE_PRICE,
+  );
+  const pair2Extra = Math.max(
+    0,
+    (freeProduct?.price || BASE_PRICE) - BASE_PRICE,
+  );
   const subtotal = BASE_PRICE + pair1Extra + pair2Extra;
   const shippingCharge = shippingMethod === "online" ? 0 : COD_CHARGE;
-  const cleanerCharge = shoeCleanerAddon && addShoeCleaner ? SHOE_CLEANER_PRICE : 0;
+  const cleanerCharge =
+    shoeCleanerAddon && addShoeCleaner ? SHOE_CLEANER_PRICE : 0;
   const totalAmount = subtotal + shippingCharge + cleanerCharge;
 
   const isCod = shippingMethod === "cod";
@@ -155,7 +169,8 @@ export default function CheckoutPage() {
     COD_DELIVERY_MAX_DAYS,
     orderDate,
   );
-  const activeDelivery = shippingMethod === "online" ? onlineDelivery : codDelivery;
+  const activeDelivery =
+    shippingMethod === "online" ? onlineDelivery : codDelivery;
 
   const phoneValid = /^\d{10}$/.test(customerDetails.contact1.trim());
   const pincodeValid = /^\d{6}$/.test(customerDetails.pincode.trim());
@@ -174,10 +189,18 @@ export default function CheckoutPage() {
     ) {
       return "This field is required";
     }
-    if (field === "contact1" && customerDetails.contact1.trim() && !phoneValid) {
+    if (
+      field === "contact1" &&
+      customerDetails.contact1.trim() &&
+      !phoneValid
+    ) {
       return "Enter a valid 10-digit phone number";
     }
-    if (field === "pincode" && customerDetails.pincode.trim() && !pincodeValid) {
+    if (
+      field === "pincode" &&
+      customerDetails.pincode.trim() &&
+      !pincodeValid
+    ) {
       return "Enter a valid 6-digit pincode";
     }
     return undefined;
@@ -197,29 +220,50 @@ export default function CheckoutPage() {
     setTouched((prev) => ({ ...prev, [name]: true }));
   };
 
-  // Build the minimal cart payload the server needs.
-  // Prices are intentionally NOT sent — the server recomputes them.
-  const buildCartPayload = () => {
+  const buildOrderPayload = () => {
     const items = [
       {
         productId: mainProduct?._id,
+        imageUrl: mainProduct?.imageUrl,
+        productName: mainProduct?.productName,
         size: mainProduct?.selectedSize,
+        price: mainProduct?.price || BASE_PRICE,
         isFreeItem: false,
       },
     ];
     if (mainProduct?.buyOneGetOne && freeProduct) {
       items.push({
         productId: freeProduct._id,
+        imageUrl: freeProduct.imageUrl,
+        productName: freeProduct.productName,
         size: freeProduct.selectedSize,
+        price: freeProduct.price || BASE_PRICE,
         isFreeItem: true,
       });
     }
-    return items;
+    return {
+      items,
+      customerDetails,
+      shippingMethod,
+      shoeCleanerAddon: shoeCleanerAddon && addShoeCleaner,
+      freeSocksOffer,
+      subtotal,
+      shippingCharge,
+      totalAmount,
+      isCod,
+      advancePaid: paymentAmount,
+      remainingAmount,
+      expectedDeliveryLabel: activeDelivery.label,
+    };
   };
 
+  // Shared shape for Meta Pixel content params, built from cart contents.
+  // Used only for the Purchase event, fired on confirmed Razorpay
+  // payment success below.
   const buildPixelPayload = () => {
     const ids = [mainProduct?._id].filter(Boolean) as string[];
-    if (mainProduct?.buyOneGetOne && freeProduct?._id) ids.push(freeProduct._id);
+    if (mainProduct?.buyOneGetOne && freeProduct?._id)
+      ids.push(freeProduct._id);
     return {
       content_ids: ids,
       content_type: "product" as const,
@@ -229,7 +273,65 @@ export default function CheckoutPage() {
     };
   };
 
-  const goToDetailsStep = () => setCurrentStep("details");
+  const buildWhatsAppMessage = (reason: string) => {
+    const pairLines = [
+      `*PAIR 1 :* ${SITE_ORIGIN}/p/${mainProduct?._id}\nSize: ${mainProduct?.selectedSize || "N/A"}`,
+    ];
+    if (mainProduct?.buyOneGetOne && freeProduct) {
+      pairLines.push(
+        `*PAIR 2 :* ${SITE_ORIGIN}/p/${freeProduct._id}\nSize: ${freeProduct.selectedSize || "N/A"}`,
+      );
+    }
+
+    return `*ORDER CONFIRMATION – 2 PAIR COMBO*
+⚠️ ${reason}. Please confirm this order manually.
+
+*CUSTOMER INFORMATION*
+Name: ${customerDetails.name}
+Instagram ID: ${customerDetails.instagramId || "N/A"}
+Address: ${customerDetails.address}
+District: ${customerDetails.district}
+State: ${customerDetails.state}
+Pincode: ${customerDetails.pincode}
+Landmark: ${customerDetails.landmark || "N/A"}
+Phone 1: ${customerDetails.contact1}
+Alternative Phone 2: ${customerDetails.contact2 || "N/A"}
+
+*PRODUCT DETAILS*
+
+${pairLines.join("\n\n")}
+
+*PAYMENT SUMMARY*
+- Product Price: ₹${subtotal}
+${cleanerCharge > 0 ? `- Add-on: Shoe Cleaner (+₹${SHOE_CLEANER_PRICE})\n` : ""}- Shipping: ${shippingMethod === "online" ? "Free (Prepaid)" : `₹${COD_CHARGE} (COD)`}
+${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
+*Total Amount Payable: ₹${totalAmount}✅*`.trim();
+  };
+
+  const redirectToWhatsAppFallback = (reason: string) => {
+    // Order wasn't confirmed by Razorpay, so this is a custom event, not
+    // a standard Purchase — keeps reported Purchase revenue accurate.
+    fbTrackCustom("WhatsAppOrderHandoff", {
+      value: totalAmount,
+      currency: "INR",
+      reason,
+    });
+
+    const message = buildWhatsAppMessage(reason);
+    window.open(
+      `https://wa.me/${site.phone}?text=${encodeURIComponent(message)}`,
+      "_blank",
+    );
+    localStorage.removeItem("cart");
+    setFormErrors([
+      `${reason}. We've opened WhatsApp so you can confirm your order directly with us.`,
+    ]);
+    setIsLoading(false);
+  };
+
+  const goToDetailsStep = () => {
+    setCurrentStep("details");
+  };
 
   const handleRazorpayPayment = async () => {
     setTouched((prev) => {
@@ -247,49 +349,51 @@ export default function CheckoutPage() {
 
     const loaded = await loadRazorpay();
     if (!loaded) {
-      setFormErrors(["Payment gateway is currently unavailable. Please try again."]);
-      setIsLoading(false);
+      redirectToWhatsAppFallback("Payment gateway is currently unavailable");
       return;
     }
 
     try {
-      // 1) Server creates the Sanity order + Razorpay order in one go.
       const orderRes = await fetch("/api/razorpay/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: buildCartPayload(),
-          customerDetails,
-          shippingMethod,
-          shoeCleanerAddon: shoeCleanerAddon && addShoeCleaner,
-          freeSocksOffer,
+          amount: paymentAmount,
+          currency: "INR",
+          receipt: `order_${Date.now()}`,
         }),
       });
 
       const orderData = await orderRes.json();
-      if (!orderRes.ok || !orderData?.razorpayOrder?.id) {
+      if (!orderRes.ok || !orderData?.order?.id) {
         throw new Error(orderData?.error || "Could not create order");
       }
 
-      const { razorpayOrder, keyId, orderId } = orderData;
-
       const options = {
-        key: keyId,
-        amount: razorpayOrder.amount,
-        currency: razorpayOrder.currency,
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: orderData.order.amount,
+        currency: orderData.order.currency,
         name: site.name || "Footex",
         description: isCod
           ? `COD Advance Payment (₹${COD_ADVANCE_AMOUNT})`
           : "2 Pair Shoes Order",
-        order_id: razorpayOrder.id,
+        order_id: orderData.order.id,
         prefill: {
           name: customerDetails.name,
           contact: customerDetails.contact1,
         },
+        notes: {
+          address: customerDetails.address,
+          district: customerDetails.district,
+          state: customerDetails.state,
+          pincode: customerDetails.pincode,
+          instagram: customerDetails.instagramId,
+          isCod: String(isCod),
+          remainingAmount: String(remainingAmount),
+        },
         theme: { color: "#000000" },
         handler: async (response: any) => {
           try {
-            // 2) Verify signature server-side. This only flips status to "paid".
             const verifyRes = await fetch("/api/razorpay/verify", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -297,17 +401,18 @@ export default function CheckoutPage() {
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
+                orderPayload: buildOrderPayload(),
               }),
             });
             const verifyData = await verifyRes.json();
 
             if (!verifyData.success) {
-              // Payment succeeded at Razorpay but our verify failed.
-              // The webhook will reconcile — send them to the pending page.
-              router.push(`/order-pending?order_id=${orderId}`);
+              redirectToWhatsAppFallback("Payment verification failed");
               return;
             }
 
+            // Fire Purchase only on confirmed Razorpay payment success.
+            // eventID = payment_id for dedup against any server-side CAPI event.
             fbEvent(
               "Purchase",
               { ...buildPixelPayload(), value: paymentAmount },
@@ -316,11 +421,10 @@ export default function CheckoutPage() {
 
             localStorage.removeItem("cart");
             router.push(
-              `/order-confirmed?order_id=${orderId}&payment_id=${response.razorpay_payment_id}`,
+              `/order-confirmed?payment_id=${response.razorpay_payment_id}`,
             );
           } catch {
-            // Same reasoning — webhook reconciles.
-            router.push(`/order-pending?order_id=${orderId}`);
+            redirectToWhatsAppFallback("We couldn't confirm your payment");
           }
         },
         modal: {
@@ -329,22 +433,12 @@ export default function CheckoutPage() {
       };
 
       const rzp = new window.Razorpay(options);
-
-      rzp.on("payment.failed", async (resp: any) => {
-        fbTrackCustom("PaymentFailed", {
-          value: paymentAmount,
-          currency: "INR",
-          reason: resp?.error?.description || "unknown",
-        });
-        // Order already exists in Sanity as "pending".
-        // Redirect to a retry page that reuses the same Sanity order.
-        router.push(`/order-failed?order_id=${orderId}`);
+      rzp.on("payment.failed", () => {
+        redirectToWhatsAppFallback("Your payment failed");
       });
-
       rzp.open();
-    } catch (err: any) {
-      setFormErrors([err?.message || "We couldn't start the payment. Please try again."]);
-      setIsLoading(false);
+    } catch {
+      redirectToWhatsAppFallback("We couldn't start the payment");
     }
   };
 
@@ -440,7 +534,8 @@ export default function CheckoutPage() {
               </p>
             )}
             <p className="text-xs text-center text-muted-foreground mt-2">
-              Secure payment via Razorpay · Estimated delivery {activeDelivery.label}
+              Secure payment via Razorpay · Estimated delivery{" "}
+              {activeDelivery.label}
             </p>
           </div>
         </div>

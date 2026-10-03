@@ -15,7 +15,8 @@ import Link from "next/link";
 export interface Product {
   _id: string;
   productName: string;
-  sizes: string[];
+  sizes: (string | number)[];
+  disabledSizes?: (string | number)[];
   buyOneGetOne: boolean;
   imageUrl?: string;
   price?: number;
@@ -24,6 +25,10 @@ export interface Product {
 
 // How long to wait before showing the manual "go to checkout" fallback
 const CHECKOUT_FALLBACK_DELAY_MS = 3000;
+
+// Sizes may be numbers (Sanity) or strings (state), so compare as strings
+const isSizeDisabled = (product: Product | null | undefined, size: string | number) =>
+  !!product?.disabledSizes?.some((s) => String(s) === String(size));
 
 export const useAddToCart = () => {
   const router = useRouter();
@@ -326,22 +331,31 @@ export const useAddToCart = () => {
           </div>
 
           <div className="flex flex-wrap justify-center gap-2 mb-6">
-            {currentProduct.sizes?.map((size: string) => (
-              <Button
-                key={size}
-                className="min-w-[60px] font-semibold rounded-md"
-                variant={currentSize === size ? "default" : "outline"}
-                onClick={() => {
-                  if (isSelectingFreeProduct) {
-                    setSelectedFreeProductSize(size);
-                  } else {
-                    setSelectedSize(size);
-                  }
-                }}
-              >
-               UK {size}
-              </Button>
-            ))}
+            {currentProduct.sizes?.map((rawSize) => {
+              const size = String(rawSize);
+              const off = isSizeDisabled(currentProduct, size);
+
+              return (
+                <Button
+                  key={size}
+                  disabled={off}
+                  className={`min-w-[60px] font-semibold rounded-md ${
+                    off ? "line-through opacity-40 cursor-not-allowed" : ""
+                  }`}
+                  variant={currentSize === size ? "default" : "outline"}
+                  onClick={() => {
+                    if (off) return;
+                    if (isSelectingFreeProduct) {
+                      setSelectedFreeProductSize(size);
+                    } else {
+                      setSelectedSize(size);
+                    }
+                  }}
+                >
+                  UK {size}
+                </Button>
+              );
+            })}
           </div>
 
           <Button
@@ -349,6 +363,12 @@ export const useAddToCart = () => {
             onClick={() => {
               if (!currentSize) {
                 toast.error("Please select a size");
+                return;
+              }
+
+              // Guard against stale cached data
+              if (isSizeDisabled(currentProduct, currentSize)) {
+                toast.error("This size is unavailable");
                 return;
               }
 

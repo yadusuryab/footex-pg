@@ -26,6 +26,7 @@ const MARQUEE_ITEMS = [
 ];
 
 const MENU_LINKS = [
+    { label: "Track Order", href: "/order/track" },
   { label: "Terms & Conditions", href: "/T&C" },
   { label: "Privacy Policy", href: "/privacy-policy" },
 ];

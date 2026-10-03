@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { serverClient } from "@/lib/sanity-server";
 
+export const runtime = "nodejs";
+
 export async function POST(req: NextRequest) {
   const raw = await req.text();
   const signature = req.headers.get("x-razorpay-signature") || "";
@@ -12,34 +14,41 @@ export async function POST(req: NextRequest) {
     .update(raw)
     .digest("hex");
 
-  if (expected !== signature) {
+  if (
+    signature.length !== expected.length ||
+    !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))
+  ) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
   const event = JSON.parse(raw);
   const payment = event?.payload?.payment?.entity;
-  const razorpayOrderId = payment?.order_id;
-  const razorpayPaymentId = payment?.id;
+  if (!payment?.order_id) return NextResponse.json({ ok: true });
 
-  if (!razorpayOrderId) {
-    return NextResponse.json({ ok: true });
-  }
+  const razorpayOrderId = payment.order_id;
+  const razorpayPaymentId = payment.id;
+  const sanityOrderId = payment.notes?.sanityOrderId;
 
-  const order = await serverClient.fetch(
-    `*[_type == "order" && razorpayOrderId == $rid][0]{ _id, status }`,
-    { rid: razorpayOrderId }
-  );
+  const order = sanityOrderId
+    ? await serverClient.fetch(
+        `*[_type == "order" && _id == $id][0]{ _id, paymentStatus }`,
+        { id: sanityOrderId }
+      )
+    : await serverClient.fetch(
+        `*[_type == "order" && razorpayOrderId == $rid][0]{ _id, paymentStatus }`,
+        { rid: razorpayOrderId }
+      );
 
   if (!order) {
     console.warn("[webhook] No Sanity order for", razorpayOrderId);
     return NextResponse.json({ ok: true });
   }
 
-  if (event.event === "payment.captured" && order.status !== "paid") {
+  if (event.event === "payment.captured" && order.paymentStatus !== "paid") {
     await serverClient
       .patch(order._id)
       .set({
-        status: "paid",
+        paymentStatus: "paid",
         razorpayPaymentId,
         paidAt: new Date().toISOString(),
         paidVia: "webhook",
@@ -51,7 +60,7 @@ export async function POST(req: NextRequest) {
     await serverClient
       .patch(order._id)
       .set({
-        status: "payment_failed",
+        paymentStatus: "failed",
         razorpayPaymentId,
         failedAt: new Date().toISOString(),
       })

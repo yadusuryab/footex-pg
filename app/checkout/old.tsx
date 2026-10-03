@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import Script from "next/script";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { CustomerDetailsForm } from "@/components/checkout/checkout-form";
 import { site } from "@/lib/site-config";
 import { client } from "@/sanityClient";
@@ -31,12 +29,18 @@ import { PaymentStep } from "@/components/checkout/payment-step";
 
 const COD_ADVANCE_AMOUNT = 300;
 
-// TODO: point this at your real site origin if site-config exposes one
-// (e.g. site.url) — kept as a literal to match the domain used in the
-// WhatsApp-only checkout flow.
 const SITE_ORIGIN = "https://footex.in";
 
-const REQUIRED_FIELDS = ["name", "contact1", "address", "district", "state", "pincode"] as const;
+const RAZORPAY_SRC = "https://checkout.razorpay.com/v1/checkout.js";
+
+const REQUIRED_FIELDS = [
+  "name",
+  "contact1",
+  "address",
+  "district",
+  "state",
+  "pincode",
+] as const;
 
 declare global {
   interface Window {
@@ -44,10 +48,37 @@ declare global {
   }
 }
 
+const loadRazorpay = (): Promise<boolean> =>
+  new Promise((resolve) => {
+    if (typeof window === "undefined") return resolve(false);
+    if (window.Razorpay) return resolve(true);
+
+    const existing = document.querySelector<HTMLScriptElement>(
+      `script[src="${RAZORPAY_SRC}"]`,
+    );
+    if (existing) existing.remove(); // drop stale/failed tag before retrying
+
+    const timeout = setTimeout(() => resolve(false), 8000);
+    const s = document.createElement("script");
+    s.src = RAZORPAY_SRC;
+    s.async = true;
+    s.onload = () => {
+      clearTimeout(timeout);
+      resolve(!!window.Razorpay);
+    };
+    s.onerror = () => {
+      clearTimeout(timeout);
+      resolve(false);
+    };
+    document.body.appendChild(s);
+  });
+
 export default function CheckoutPage() {
   const router = useRouter();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [shippingMethod, setShippingMethod] = useState<"online" | "cod">("online");
+  const [shippingMethod, setShippingMethod] = useState<"online" | "cod">(
+    "online",
+  );
   const [addShoeCleaner, setAddShoeCleaner] = useState(false);
   const [currentStep, setCurrentStep] = useState<CheckoutStep>("payment");
   const [customerDetails, setCustomerDetails] = useState<CustomerDetails>({
@@ -62,9 +93,6 @@ export default function CheckoutPage() {
     instagramId: "",
   });
   const [isLoading, setIsLoading] = useState(false);
-  // Reserved for operational/gateway-level messages only (script failed to
-  // load, payment failed, verification failed). Required-field validation
-  // is now shown inline per-field instead — see touched/getFieldError below.
   const [formErrors, setFormErrors] = useState<string[]>([]);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [orderDate] = useState<Date>(() => new Date());
@@ -72,10 +100,11 @@ export default function CheckoutPage() {
   const [freeSocksOffer, setFreeSocksOffer] = useState(false);
   const [shoeCleanerAddon, setShoeCleanerAddon] = useState(false);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
-  const [razorpayReady, setRazorpayReady] = useState(false);
 
-  // Guards so repeated step navigation doesn't re-fire InitiateCheckout.
-  const initiateCheckoutFired = useRef(false);
+  // Preload Razorpay so it's usually ready before the click
+  useEffect(() => {
+    loadRazorpay();
+  }, []);
 
   useEffect(() => {
     try {
@@ -112,22 +141,37 @@ export default function CheckoutPage() {
 
   const mainProduct = cartItems[0];
   const freeProduct = mainProduct?.freeProduct;
-  const pair1Extra = Math.max(0, (mainProduct?.price || BASE_PRICE) - BASE_PRICE);
-  const pair2Extra = Math.max(0, (freeProduct?.price || BASE_PRICE) - BASE_PRICE);
+  const pair1Extra = Math.max(
+    0,
+    (mainProduct?.price || BASE_PRICE) - BASE_PRICE,
+  );
+  const pair2Extra = Math.max(
+    0,
+    (freeProduct?.price || BASE_PRICE) - BASE_PRICE,
+  );
   const subtotal = BASE_PRICE + pair1Extra + pair2Extra;
   const shippingCharge = shippingMethod === "online" ? 0 : COD_CHARGE;
-  const cleanerCharge = shoeCleanerAddon && addShoeCleaner ? SHOE_CLEANER_PRICE : 0;
+  const cleanerCharge =
+    shoeCleanerAddon && addShoeCleaner ? SHOE_CLEANER_PRICE : 0;
   const totalAmount = subtotal + shippingCharge + cleanerCharge;
 
   const isCod = shippingMethod === "cod";
   const paymentAmount = isCod ? COD_ADVANCE_AMOUNT : totalAmount;
   const remainingAmount = isCod ? totalAmount - COD_ADVANCE_AMOUNT : 0;
 
-  const onlineDelivery = getExpectedDelivery(ONLINE_DELIVERY_MIN_DAYS, ONLINE_DELIVERY_MAX_DAYS, orderDate);
-  const codDelivery = getExpectedDelivery(COD_DELIVERY_MIN_DAYS, COD_DELIVERY_MAX_DAYS, orderDate);
-  const activeDelivery = shippingMethod === "online" ? onlineDelivery : codDelivery;
+  const onlineDelivery = getExpectedDelivery(
+    ONLINE_DELIVERY_MIN_DAYS,
+    ONLINE_DELIVERY_MAX_DAYS,
+    orderDate,
+  );
+  const codDelivery = getExpectedDelivery(
+    COD_DELIVERY_MIN_DAYS,
+    COD_DELIVERY_MAX_DAYS,
+    orderDate,
+  );
+  const activeDelivery =
+    shippingMethod === "online" ? onlineDelivery : codDelivery;
 
-  // --- Field-level validation (inline, no top alert) ---
   const phoneValid = /^\d{10}$/.test(customerDetails.contact1.trim());
   const pincodeValid = /^\d{6}$/.test(customerDetails.pincode.trim());
 
@@ -145,10 +189,18 @@ export default function CheckoutPage() {
     ) {
       return "This field is required";
     }
-    if (field === "contact1" && customerDetails.contact1.trim() && !phoneValid) {
+    if (
+      field === "contact1" &&
+      customerDetails.contact1.trim() &&
+      !phoneValid
+    ) {
       return "Enter a valid 10-digit phone number";
     }
-    if (field === "pincode" && customerDetails.pincode.trim() && !pincodeValid) {
+    if (
+      field === "pincode" &&
+      customerDetails.pincode.trim() &&
+      !pincodeValid
+    ) {
       return "Enter a valid 6-digit pincode";
     }
     return undefined;
@@ -206,12 +258,12 @@ export default function CheckoutPage() {
   };
 
   // Shared shape for Meta Pixel content params, built from cart contents.
-  // Still used by InitiateCheckout below — Purchase tracking has moved to
-  // /order-confirmed, guarded against firing unless the order is confirmed
-  // to actually exist there.
+  // Used only for the Purchase event, fired on confirmed Razorpay
+  // payment success below.
   const buildPixelPayload = () => {
     const ids = [mainProduct?._id].filter(Boolean) as string[];
-    if (mainProduct?.buyOneGetOne && freeProduct?._id) ids.push(freeProduct._id);
+    if (mainProduct?.buyOneGetOne && freeProduct?._id)
+      ids.push(freeProduct._id);
     return {
       content_ids: ids,
       content_type: "product" as const,
@@ -221,9 +273,6 @@ export default function CheckoutPage() {
     };
   };
 
-  // Builds the same order-confirmation message format used by the
-  // WhatsApp-only checkout flow, so support gets a consistent layout
-  // regardless of which path the order came through.
   const buildWhatsAppMessage = (reason: string) => {
     const pairLines = [
       `*PAIR 1 :* ${SITE_ORIGIN}/p/${mainProduct?._id}\nSize: ${mainProduct?.selectedSize || "N/A"}`,
@@ -259,9 +308,6 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
 *Total Amount Payable: ₹${totalAmount}✅*`.trim();
   };
 
-  // Single fallback path for any payment-gateway failure: build the order
-  // message, hand it to WhatsApp, and clear the cart since the order has
-  // effectively been handed off for manual confirmation.
   const redirectToWhatsAppFallback = (reason: string) => {
     // Order wasn't confirmed by Razorpay, so this is a custom event, not
     // a standard Purchase — keeps reported Purchase revenue accurate.
@@ -272,27 +318,22 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
     });
 
     const message = buildWhatsAppMessage(reason);
-    window.open(`https://wa.me/${site.phone}?text=${encodeURIComponent(message)}`, "_blank");
+    window.open(
+      `https://wa.me/${site.phone}?text=${encodeURIComponent(message)}`,
+      "_blank",
+    );
     localStorage.removeItem("cart");
-    setFormErrors([`${reason}. We've opened WhatsApp so you can confirm your order directly with us.`]);
+    setFormErrors([
+      `${reason}. We've opened WhatsApp so you can confirm your order directly with us.`,
+    ]);
     setIsLoading(false);
   };
 
   const goToDetailsStep = () => {
-    if (!initiateCheckoutFired.current) {
-      initiateCheckoutFired.current = true;
-      fbEvent("InitiateCheckout", {
-        ...buildPixelPayload(),
-        value: totalAmount,
-      });
-    }
     setCurrentStep("details");
   };
 
   const handleRazorpayPayment = async () => {
-    // Mark every required field touched so any that are still invalid
-    // surface their inline error right under the field, instead of a
-    // separate list at the top of the page.
     setTouched((prev) => {
       const next = { ...prev };
       REQUIRED_FIELDS.forEach((field) => {
@@ -301,17 +342,16 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
       return next;
     });
 
-    if (!isFormValid) {
-      return;
-    }
-
-    if (!razorpayReady || typeof window.Razorpay === "undefined") {
-      redirectToWhatsAppFallback("Payment gateway is currently unavailable");
-      return;
-    }
+    if (!isFormValid) return;
 
     setIsLoading(true);
     setFormErrors([]);
+
+    const loaded = await loadRazorpay();
+    if (!loaded) {
+      redirectToWhatsAppFallback("Payment gateway is currently unavailable");
+      return;
+    }
 
     try {
       const orderRes = await fetch("/api/razorpay/order", {
@@ -371,20 +411,23 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
               return;
             }
 
-            // Purchase tracking now happens on /order-confirmed, and only
-            // fires once that page confirms this payment_id matches a real,
-            // persisted order — see that page's useEffect.
+            // Fire Purchase only on confirmed Razorpay payment success.
+            // eventID = payment_id for dedup against any server-side CAPI event.
+            fbEvent(
+              "Purchase",
+              { ...buildPixelPayload(), value: paymentAmount },
+              response.razorpay_payment_id,
+            );
 
             localStorage.removeItem("cart");
-            router.push(`/order-confirmed?payment_id=${response.razorpay_payment_id}`);
+            router.push(
+              `/order-confirmed?payment_id=${response.razorpay_payment_id}`,
+            );
           } catch {
             redirectToWhatsAppFallback("We couldn't confirm your payment");
           }
         },
         modal: {
-          // User closed the checkout modal themselves — that's a
-          // cancellation, not a gateway failure, so just reset state
-          // rather than redirecting them elsewhere.
           ondismiss: () => setIsLoading(false),
         },
       };
@@ -394,7 +437,7 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
         redirectToWhatsAppFallback("Your payment failed");
       });
       rzp.open();
-    } catch (err) {
+    } catch {
       redirectToWhatsAppFallback("We couldn't start the payment");
     }
   };
@@ -404,18 +447,12 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
   }
 
   return (
-    <main className="container mx-auto px-4 max-w-2xl min-h-screen pb-24">
-      <Script
-        src="https://checkout.razorpay.com/v1/checkout.js"
-        onLoad={() => setRazorpayReady(true)}
-        onError={() => setRazorpayReady(false)}
-      />
-
-      <div className="py-4">
+    <main className="container mx-auto px-4 max-w-2xl min-h-screen pb-28">
+      <div className="py-6">
         <StepProgress currentStep={currentStep} />
 
         {formErrors.length > 0 && (
-          <Alert variant="destructive" className="mb-4">
+          <Alert variant="destructive" className="mb-4 rounded-xl">
             <AlertDescription>
               <ul className="list-disc list-inside space-y-1">
                 {formErrors.map((e, i) => (
@@ -441,22 +478,18 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
             onContinue={goToDetailsStep}
           />
         ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5" /> Delivery Information
-              </CardTitle>
-              <CardDescription>Enter your details for order delivery</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <CustomerDetailsForm
-                customerDetails={customerDetails}
-                handleInputChange={handleInputChange}
-                handleInputBlur={handleInputBlur}
-                getFieldError={getFieldError}
-              />
-            </CardContent>
-          </Card>
+          <div>
+            <h2 className="text-base font-semibold mb-1">Delivery details</h2>
+            <p className="text-sm text-muted-foreground mb-5">
+              Enter your details for order delivery
+            </p>
+            <CustomerDetailsForm
+              customerDetails={customerDetails}
+              handleInputChange={handleInputChange}
+              handleInputBlur={handleInputBlur}
+              getFieldError={getFieldError}
+            />
+          </div>
         )}
 
         <OrderSummary
@@ -471,35 +504,28 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
         />
 
         {isCod && (
-          <p className="text-sm text-muted-foreground mt-2 text-center">
-            ₹{COD_ADVANCE_AMOUNT} advance now, ₹{remainingAmount} on delivery.
+          <p className="text-xs text-muted-foreground mt-3 text-center">
+            ₹{COD_ADVANCE_AMOUNT} advance now, ₹{remainingAmount} on delivery
           </p>
         )}
       </div>
 
-      {freeSocksOffer && (
-        <div className="fixed bottom-24 right-4 z-40 flex items-center gap-1.5 rounded-full bg-gradient-to-r from-red-600 via-orange-500 to-yellow-400 text-white text-xs font-bold px-3 py-2 shadow-lg ring-2 ring-yellow-300 animate-bounce">
-          Free Socks 🎉
-        </div>
-      )}
-
       {currentStep === "details" && (
-        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t p-4">
+        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t py-2">
           <div className="container mx-auto px-4 max-w-2xl">
             <Button
               onClick={handleRazorpayPayment}
               disabled={isLoading}
-              className="w-full h-12 text-lg font-semibold flex items-center gap-2"
-              size="lg"
+              className="w-full h-12 text-sm font-medium rounded-md flex items-center gap-2"
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="h-5 w-5 animate-spin" /> Processing...
+                  <Loader2 className="h-4 w-4 animate-spin" /> Processing...
                 </>
               ) : isCod ? (
-                `Pay ₹${COD_ADVANCE_AMOUNT} Advance`
+                `Pay ₹${COD_ADVANCE_AMOUNT} advance`
               ) : (
-                `Pay Now – ₹${totalAmount}`
+                `Pay now — ₹${totalAmount}`
               )}
             </Button>
             {!isFormValid && (
@@ -508,7 +534,8 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
               </p>
             )}
             <p className="text-xs text-center text-muted-foreground mt-2">
-              Secure payment via Razorpay • Estimated delivery {activeDelivery.label}
+              Secure payment via Razorpay · Estimated delivery{" "}
+              {activeDelivery.label}
             </p>
           </div>
         </div>

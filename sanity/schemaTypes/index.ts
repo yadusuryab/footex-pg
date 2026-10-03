@@ -37,6 +37,15 @@ const shoe = {
       options: { list: [6, 7, 8, 9, 10] },
       initialValue: [6, 7, 8, 9, 10],
     },
+    {
+  name: "disabledSizes",
+  title: "Disabled Sizes",
+  type: "array",
+  of: [{ type: "number" }],
+  options: { list: [6, 7, 8, 9, 10] },
+  description: "Sizes shown but not selectable",
+  initialValue: [],
+},
     { name: "colorVariants", title: "Color Variants", type: "array", of: [{ type: "string" }] },
     {
   name: "productLabel",

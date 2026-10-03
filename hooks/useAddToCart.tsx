@@ -191,7 +191,7 @@ export const useAddToCart = () => {
         />
       </div>
     );
-
+  
     return (
       <div className="fixed inset-0 mt-2 bg-background h-full z-50 p-4 overflow-y-auto">
         <SHeading title="Select 2nd Pair" nolink />

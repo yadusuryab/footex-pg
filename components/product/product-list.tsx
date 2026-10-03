@@ -58,7 +58,7 @@ function ProductList({ price }: ProductListProps) {
       loadProducts(offset, 8); // ✅ Smaller subsequent batches
     }
   }, [loading, hasMore, offset, loadProducts]);
-
+console.log("Vehicles state:", vehicles);
   // ✅ More efficient scroll handler with throttling
   useEffect(() => {
     if (!hasMore || loading || !initialLoadDone) return;

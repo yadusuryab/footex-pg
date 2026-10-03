@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
       createdAt: new Date().toISOString(),
     };
     const created = await serverClient.create(sanityDoc);
-
+    console.log("Created Sanity order:", created);
     // ---- 4. Create Razorpay order ----
     const rzpOrder = await razorpay.orders.create({
       amount: priced.paymentAmount * 100,

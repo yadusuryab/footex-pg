@@ -41,16 +41,18 @@ export async function priceCart(
 
   const ids = lines.map((l) => l.productId);
 
-  // NOTE: _type is "shoe", and image comes from images[0].asset->url
   const products = await sanity.fetch(
     `*[_type == "shoe" && _id in $ids]{
       _id,
       productName,
       price,
-      "imageUrl": images[0].asset->url + "?w=400&h=400&auto=format&q=85&fit=crop"
+      "rawImage": coalesce(images[0].asset->url, "")
     }`,
     { ids }
   );
+
+  console.log("[priceCart] products:", JSON.stringify(products));
+
   const byId = new Map(products.map((p: any) => [p._id, p]));
 
   const missing: string[] = [];
@@ -63,7 +65,9 @@ export async function priceCart(
     return {
       productId: p._id,
       productName: p.productName ?? "Unknown product",
-      imageUrl: p.imageUrl ?? "",
+      imageUrl: p.rawImage
+        ? `${p.rawImage}?w=400&h=400&auto=format&q=85&fit=crop`
+        : "",
       size: l.selectedSize,
       price: typeof p.price === "number" ? p.price : BASE_PRICE,
       isFreeItem: !!l.isFreeItem,

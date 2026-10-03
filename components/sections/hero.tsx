@@ -47,13 +47,13 @@ export function Hero() {
   }
 
   return (
-    <div className="w-full md:max-w-[400px] mx-auto px-4 sm:px-6">
+    <div className="w-full">
       <Link
         href={href}
         className="block relative group"
         onClick={() => setIsLoading(true)}
       >
-        <div className="relative w-full bg-gradient-to-t from-blue-600  to-blue-500 p-2 rounded-3xl overflow-hidden">
+        <div className="relative w-full bg-gray-300  from-blue-600  to-blue-500 p-2 rounded-3xl overflow-hidden">
           {/* Image with skeleton */}
           <div className="relative bg-gray-100 rounded-2xl overflow-hidden">
             <Image
@@ -82,7 +82,7 @@ export function Hero() {
             <RainbowButton
               type="button"
               size="lg"
-              className="h-12 sm:h-14 md:h-16 flex-1 min-w-0 rounded-none rounded-l-full text-xl text-white border-r border-white/30"
+              className="h-12 sm:h-14 md:h-16 flex-1 min-w-0 rounded-none rounded-l-2xl text-xl text-white border-r border-white/30"
             >
               Claim offer
             </RainbowButton>
@@ -90,7 +90,7 @@ export function Hero() {
               type="button"
               size="lg"
               aria-label="Claim offer"
-              className="h-12 sm:h-14 md:h-16 aspect-square shrink-0 px-0 rounded-none rounded-r-full text-white"
+              className="h-12 sm:h-14 md:h-16 aspect-square shrink-0 px-0 rounded-none rounded-r-2xl text-white"
             >
               <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6" />
             </RainbowButton>

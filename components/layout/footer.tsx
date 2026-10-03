@@ -13,62 +13,65 @@ function Footer() {
   if (pathname === "/checkout") return null;
 
   return (
-    <footer className="bg-muted  rounded-t-4xl ">
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid gap-8 grid-cols-2 md:grid-cols-4 ">
-         
+    <footer className="relative overflow-hidden bg-gradient-to-t from-blue-700 via-blue-500 to-transparent">
+      {/* Soft background glow */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-20 bottom-0 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
+        <div className="absolute -right-20 top-10 h-72 w-72 rounded-full bg-blue-300/20 blur-3xl" />
+      </div>
 
-          {/* Links */}
-          {/* <div className="flex justify-center items-center">
-            <p className="text-sm text-muted-foreground">
-             
-              <Link 
-                href="https://instagram.com/getshopigo" 
-                className=" gap-1 hover:opacity-80 transition-opacity"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <img 
-                  src="/shopigo.avif" 
-                  alt="Shopigo" 
-                  className="h-10 w-auto"
-                />
-              </Link>
-            </p>
-          </div> */}
-           {/* Brand */}
-           <div className="flex justify-center col-span-2 items-center">
-            <Brand small/>
+      <div className="container relative mx-auto px-4 py-10 md:py-12">
+        {/* Main Footer */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {/* Brand */}
+          <div className="flex min-h-[140px] items-center justify-center rounded-2xl border border-white/20  p-6 backdrop-blur-md">
+            <Brand small />
           </div>
 
-          {/* Support */}
-          {/* <div >
-            <h4 className="font-semibold mb-2 ">Support</h4>
-            <div className="space-y-1 text-sm">
-              <Link href="/T&C" className="block text-muted-foreground hover:text-foreground">Shipping</Link>
-              <Link href="/T&C" className="block text-muted-foreground hover:text-foreground">Returns</Link>
-            </div>
-          </div> */}
-
           {/* Contact */}
-          <div className="bg-background rounded-xl p-4 col-span-2 tracking-tighter">
-            <h4 className="font-semibold mb-2">Contact</h4>
-            <div className="space-y-1 text-sm text-muted-foreground">
+          <div className="flex min-h-[140px] flex-col justify-center rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur-md">
+            <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-white">
+              Contact
+            </h4>
+
+            <div className="space-y-2 text-sm text-white/80">
               <div>{site.phone}</div>
-              {site.address && <div>{site.address}</div>}
+
+              {site.address && (
+                <div className="max-w-md leading-relaxed">
+                  {site.address}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         {/* Bottom */}
-        <div className="mt-8 pt-6 border-t text-center  text-sm text-muted-foreground">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-2">
-          <div className="flex gap-4">
-              <Link href="/privacy-policy" className="hover:text-foreground">Privacy</Link>
-              <Link href="/T&C" className="hover:text-foreground">Terms</Link>
+        <div className="mt-8 border-t border-white/20 pt-6">
+          <div className="flex flex-col items-center justify-between gap-4 text-sm md:flex-row">
+            {/* Legal Links */}
+            <div className="flex items-center gap-5">
+              <Link
+                href="/privacy-policy"
+                className="text-white/70 transition-colors hover:text-white"
+              >
+                Privacy
+              </Link>
+
+              <span className="text-white/30">•</span>
+
+              <Link
+                href="/T&C"
+                className="text-white/70 transition-colors hover:text-white"
+              >
+                Terms
+              </Link>
             </div>
-            <h4 className="text-xs">© {currentYear} {site.name.toUpperCase()}. All rights reserved.</h4 >
-          
+
+            {/* Copyright */}
+            <p className="text-xs text-white/60">
+              © {currentYear} {site.name.toUpperCase()}. All rights reserved.
+            </p>
           </div>
         </div>
       </div>

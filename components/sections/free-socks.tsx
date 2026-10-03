@@ -53,7 +53,7 @@ export function FreeSocksPromo() {
       </div>
 
       {/* bottom strip */}
-      <div className="absolute inset-x-0 bottom-0 bg-black py-1.5 text-center text-sm font-semibold uppercase text-white">
+      <div className="absolute inset-x-0 bottom-0 bg-black/20 backdrop-blur-sm py-1.5 text-center text-sm font-semibold uppercase text-white">
         Exclusive Offer
       </div>
     </div>

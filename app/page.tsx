@@ -24,24 +24,30 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="flex py-0  flex-col min-h-screen">
-      <div className="mb-4"></div>
-      <div className="relative overflow-hidden">
-        <Hero />
-      </div>
-      {freeSocksOffer && (
-        <div className="px-4 my-2 md:max-w-[400px] w-full mx-auto ">
-          <FreeSocksPromo />
+    <div className="py-4 md:px-6    min-h-screen">
+      <div className="md:flex md:justify-center md:items-start ">
+        <div>
+ <div className="px-4 my-2 md:max-w-[400px] w-full mx-auto ">          <Hero />
         </div>
-      )}
-        <div className="px-4 my-2 md:max-w-[400px] w-full mx-auto ">
-        <OrderTrackCTA />
+        {freeSocksOffer && (
+            <div className="px-4 my-2 md:max-w-[400px] w-full mx-auto ">
+              <FreeSocksPromo />
+            </div>
+          )}
+        </div>
+        <div>
+          <div className="px-4 my-2 md:max-w-[400px] w-full mx-auto ">
+            <OrderTrackCTA />
+          </div>
+          <div className="px-4 my-2 md:max-w-[400px] w-full mx-auto ">
+            <ReviewsBento />
+           
+          </div>
+           <div className="px-4 my-2 md:max-w-[400px] w-full mx-auto ">
+              <ShopVideo />
+            </div>
+        </div>
       </div>
-
-        <div className="px-4 my-2 md:max-w-[400px] w-full mx-auto ">
-        <ReviewsBento />
-      </div>
-      <ShopVideo />
 
       {/* <BrandStory /> */}
     </div>

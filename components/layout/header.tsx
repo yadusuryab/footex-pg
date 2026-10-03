@@ -68,7 +68,7 @@ const Header = () => {
     <>
       {/* Marquee Bar — slides up + fades out smoothly on scroll */}
       <div
-        className={`fixed top-0 z-50 w-full h-7 sm:h-8 bg-primary text-white overflow-hidden flex items-center transition-all duration-500 ease-in-out ${
+        className={`fixed top-0 z-50 w-full h-7 sm:h-8 bg-blue-500 text-white overflow-hidden flex items-center transition-all duration-500 ease-in-out ${
           marqueeHidden
             ? "-translate-y-full opacity-0"
             : "translate-y-0 opacity-100"

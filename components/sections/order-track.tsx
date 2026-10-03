@@ -11,7 +11,7 @@ import { Truck, ArrowRight } from "lucide-react";
  */
 export function OrderTrackCTA() {
   return (
-   <div className="p-2 bg-gray-200 rounded-2xl">
+   <div className="p-0 md:p-0 bg-gray-200 rounded-2xl ">
      <Link
       href="/order/track"
       className="group relative flex w-full max-w-xl mx-auto  overflow-hidden rounded-2xl bg-gradient-to-r from-blue-500 to-violet-600 shadow-[0_1px_0_0_rgba(27,39,51,0.08)] ring-1 ring-[#1B2733]/10 transition-transform duration-200 hover:-translate-y-0.5"
@@ -47,10 +47,10 @@ export function OrderTrackCTA() {
           <p className="font-bold bg-white w-fit px-1.5 py-0.5 rounded-md text-[10px] tracking-tight text-black ">
             TRACK PACKAGE
           </p>
-          <p className="mt-1 text-lg font-semibold text-white sm:text-xl">
+          <p className="mt-1 text-lg font-semibold text-white sm:text-lg">
             WHERE&apos;S MY ORDER?
           </p>
-          <p className="mt-0.5 text-sm text-white/60">
+          <p className="mt-0.5 text-sm font-semibold text-white/60">
             Live status, carrier updates, and delivery estimate.
           </p>
         </div>

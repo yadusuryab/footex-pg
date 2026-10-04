@@ -335,6 +335,15 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
 
 const handleRazorpayPayment = async () => {
   // ...touched/form validation unchanged...
+setTouched((prev) => {
+    const next = { ...prev };
+    REQUIRED_FIELDS.forEach((field) => {
+      next[field] = true;
+    });
+    return next;
+  });
+
+  if (!isFormValid) return;
 
   setIsLoading(true);
   setFormErrors([]);

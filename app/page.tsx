@@ -27,9 +27,11 @@ export default function Home() {
     <div className="py-4 md:px-6    min-h-screen">
       <div className="md:flex md:justify-center md:items-start ">
         <div>
- <div className="px-4 my-2 md:max-w-[400px] w-full mx-auto ">          <Hero />
-        </div>
-        {freeSocksOffer && (
+          <div className="px-4 my-2 md:max-w-[400px] w-full mx-auto ">
+            {" "}
+            <Hero />
+          </div>
+          {freeSocksOffer && (
             <div className="px-4 my-2 md:max-w-[400px] w-full mx-auto ">
               <FreeSocksPromo />
             </div>
@@ -41,11 +43,10 @@ export default function Home() {
           </div>
           <div className="px-4 my-2 md:max-w-[400px] w-full mx-auto ">
             <ReviewsBento />
-           
           </div>
-           <div className="px-4 my-2 md:max-w-[400px] w-full mx-auto ">
-              <ShopVideo />
-            </div>
+          <div className="px-4 my-2 md:max-w-[400px] w-full mx-auto ">
+            <ShopVideo />
+          </div>
         </div>
       </div>
 

@@ -2,18 +2,25 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Star } from "lucide-react";
+import { ArrowRight, Star, PenLine } from "lucide-react";
 import { Button } from "../ui/button";
 
 export function ReviewsBento() {
   return (
-    <Link
-      href="/reviews"
-      className="group relative block w-full overflow-hidden rounded-2xl border border-[#D4AF37]/60 bg-gradient-to-r from-blue-600 via-purple-600 to-purple-400 transition-all duration-300 hover:border-[#D4AF37] hover:shadow-[0_0_28px_rgba(212,175,55,0.35)]"
+    <Link href="/reviews" className="group relative block w-full">
+    <div
+      className="
+        group relative block w-full overflow-hidden rounded-2xl
+        border border-[#D4AF37]/60
+        bg-gradient-to-r from-blue-600 via-purple-600 to-purple-400
+        transition-all duration-300
+        hover:border-[#D4AF37]
+        hover:shadow-[0_0_28px_rgba(212,175,55,0.35)]
+      "
     >
-      {/* Animated background */}
+      {/* Animated Background */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        {/* Blue glow */}
+        {/* Blue Glow */}
         <div
           className="
             absolute -left-20 -top-20
@@ -29,10 +36,10 @@ export function ReviewsBento() {
           "
         />
 
-        {/* Purple glow */}
+        {/* Purple Glow */}
         <div
           className="
-            absolute -right-20 -bottom-20
+            absolute -bottom-20 -right-20
             h-56 w-56
             rounded-full
             bg-fuchsia-400/30
@@ -45,7 +52,7 @@ export function ReviewsBento() {
           "
         />
 
-        {/* Grid texture */}
+        {/* Grid Texture */}
         <div
           className="
             absolute inset-0
@@ -55,7 +62,7 @@ export function ReviewsBento() {
           "
         />
 
-        {/* Dot texture */}
+        {/* Dot Texture */}
         <div
           className="
             absolute inset-0
@@ -65,7 +72,7 @@ export function ReviewsBento() {
           "
         />
 
-        {/* Diagonal light */}
+        {/* Diagonal Light */}
         <div
           className="
             absolute
@@ -87,7 +94,7 @@ export function ReviewsBento() {
         />
       </div>
 
-      {/* Content */}
+      {/* Main Content */}
       <div className="relative flex items-stretch">
         {/* Text */}
         <div className="z-10 flex w-1/2 flex-col justify-center gap-2 p-5 md:p-8">
@@ -102,18 +109,31 @@ export function ReviewsBento() {
             ))}
           </div>
 
+          {/* Heading */}
           <h3 className="text-xl font-black leading-tight tracking-tight text-white md:text-2xl">
-            Happy <span>Customers</span>
+            Happy Customers
           </h3>
 
-          <p className="text-xs font-semibold text-white md:text-sm">
+          {/* Description */}
+          <p className="text-xs font-semibold text-white/90 md:text-sm">
             Real reviews from real people
           </p>
         </div>
 
-        {/* Images */}
+        {/* Review Images */}
         <div className="relative flex max-h-56 w-1/2 gap-3 overflow-hidden p-4 md:p-6">
-          <div className="relative aspect-[9/16] flex-1 -rotate-3 overflow-hidden rounded-xl border-2 border-[#D4AF37]/70 shadow-xl transition-all duration-500 group-hover:-rotate-1 group-hover:scale-105">
+          {/* Image 1 */}
+          <div
+            className="
+              relative aspect-[9/16] flex-1 -rotate-3
+              overflow-hidden rounded-xl
+              border-2 border-[#D4AF37]/70
+              shadow-xl
+              transition-all duration-500
+              group-hover:-rotate-1
+              group-hover:scale-105
+            "
+          >
             <Image
               src="/reviews/1.jpg"
               alt="Customer review"
@@ -123,7 +143,19 @@ export function ReviewsBento() {
             />
           </div>
 
-          <div className="relative aspect-[9/16] flex-1 translate-y-4 rotate-3 overflow-hidden rounded-xl border-2 border-[#D4AF37]/70 shadow-xl transition-all duration-500 group-hover:translate-y-1 group-hover:rotate-1 group-hover:scale-105">
+          {/* Image 2 */}
+          <div
+            className="
+              relative aspect-[9/16] flex-1 translate-y-4 rotate-3
+              overflow-hidden rounded-xl
+              border-2 border-[#D4AF37]/70
+              shadow-xl
+              transition-all duration-500
+              group-hover:translate-y-1
+              group-hover:rotate-1
+              group-hover:scale-105
+            "
+          >
             <Image
               src="/reviews/2.jpg"
               alt="Customer review"
@@ -136,16 +168,45 @@ export function ReviewsBento() {
       </div>
 
       {/* CTA */}
-      <div className="relative bg-black/20 text-center text-sm font-semibold uppercase text-white backdrop-blur-sm">
-        <Button
-          variant="link"
-          className="!p-0 !py-1 text-white"
-          size="sm"
+      <div
+        className="
+          relative flex items-center justify-between
+          gap-3 border-t border-white/10
+          bg-black/20 px-1 py-1
+          backdrop-blur-sm
+
+        "
+      >
+        {/* Read Reviews */}
+        <Link
+          href="/reviews"
+          className="
+            inline-flex items-center
+            text-xs font-bold uppercase tracking-wide
+            text-white
+            transition-all duration-200
+            hover:translate-x-0.5
+            hover:text-white/80
+            md:text-sm
+            px-4
+          "
         >
-          Read reviews
+          Read Reviews
           <ArrowRight className="ml-1 size-4" />
+        </Link>
+
+        {/* Divider */}
+        <span className="h-5 w-px bg-white/30" />
+
+        {/* Write Review */}
+        <Button
+      className="bg-white rounded-md rounded-br-xl text-xs font-semibold" size="sm"
+        >
+          <PenLine className="size-3.5 md:size-4" />
+          Write a Review
         </Button>
       </div>
+    </div>
     </Link>
   );
 }

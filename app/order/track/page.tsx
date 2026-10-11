@@ -78,6 +78,11 @@ function statusBadgeVariant(status: string): "default" | "secondary" | "destruct
   return "outline";
 }
 
+// Only paid orders are shown (hides pending / failed payments)
+function isPaid(order: Order) {
+  return order.paymentStatus?.toLowerCase() === "paid";
+}
+
 // Perforated divider — the "tear line" on a shipping manifest / receipt.
 function Perforation() {
   return (
@@ -122,7 +127,8 @@ function TrackOrderContent() {
         return;
       }
 
-      setOrders(data.orders);
+      // Show paid orders only
+      setOrders((data.orders as Order[]).filter(isPaid));
     } catch {
       setError("Something went wrong on our end. Please try again.");
     } finally {
@@ -166,51 +172,46 @@ function TrackOrderContent() {
         </div>
 
         <div>
-  <label htmlFor="contact1" className="block text-sm text-muted-foreground mb-2">
-    Phone number
-  </label>
+          <label htmlFor="contact1" className="block text-sm text-muted-foreground mb-2">
+            Phone number
+          </label>
 
-  <form
-    onSubmit={handleSearch}
-    className="flex flex-col sm:flex-row rounded-xl border border-input bg-card shadow-sm overflow-hidden transition-shadow focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background"
-  >
-    <Input
-      id="contact1"
-      type="tel"
-      inputMode="numeric"
-      autoComplete="tel"
-      maxLength={10}
-      value={contact1}
-      onChange={(e) => setContact1(e.target.value)}
-      placeholder="98765 43210"
-      aria-invalid={contact1.length > 0 && !isValid}
-      className="h-16 flex-1 border-0 rounded-none shadow-none text-2xl font-semibold tracking-tight tabular-nums px-5 focus-visible:ring-0"
-    />
-    <Button
-      type="submit"
-      disabled={!isValid || loading}
-      className="h-16 sm:w-40 w-full text-lg font-semibold tracking-tight rounded-none border-t sm:border-t-0 sm:border-l border-primary-foreground/10"
-    >
-      {loading ? (
-        <Loader2 className="h-5 w-5 animate-spin" />
-      ) : (
-        <Search className="h-5 w-5" />
-      )}
-      {loading ? "Searching" : "Track"}
-    </Button>
-  </form>
+          <form
+            onSubmit={handleSearch}
+            className="flex flex-col sm:flex-row rounded-xl border border-input bg-card shadow-sm overflow-hidden transition-shadow focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background"
+          >
+            <Input
+              id="contact1"
+              type="tel"
+              inputMode="numeric"
+              autoComplete="tel"
+              maxLength={10}
+              value={contact1}
+              onChange={(e) => setContact1(e.target.value)}
+              placeholder="98765 43210"
+              aria-invalid={contact1.length > 0 && !isValid}
+              className="h-16 flex-1 border-0 rounded-none shadow-none text-2xl font-semibold tracking-tight tabular-nums px-5 focus-visible:ring-0"
+            />
+            <Button
+              type="submit"
+              disabled={!isValid || loading}
+              className="h-16 sm:w-40 w-full text-lg font-semibold tracking-tight rounded-none border-t sm:border-t-0 sm:border-l border-primary-foreground/10"
+            >
+              {loading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Search className="h-5 w-5" />
+              )}
+              {loading ? "Searching" : "Track"}
+            </Button>
+          </form>
 
-  {contact1.length > 0 && !isValid && (
-    <p className="text-xs text-muted-foreground mt-2">
-      Enter a valid 10-digit phone number.
-    </p>
-  )}
-</div>
-        {contact1.length > 0 && !isValid && (
-          <p className="text-xs text-muted-foreground mt-1.5">
-            Enter a valid 10-digit phone number.
-          </p>
-        )}
+          {contact1.length > 0 && !isValid && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Enter a valid 10-digit phone number.
+            </p>
+          )}
+        </div>
 
         {loading && (
           <div className="mt-8 space-y-3">

@@ -70,7 +70,9 @@ function stepIndex(status: string) {
   return idx === -1 ? 0 : idx;
 }
 
-function statusBadgeVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
+function statusBadgeVariant(
+  status: string,
+): "default" | "secondary" | "destructive" | "outline" {
   const s = status?.toLowerCase();
   if (s === "delivered") return "default";
   if (s === "cancelled" || s === "failed") return "destructive";
@@ -167,12 +169,16 @@ function TrackOrderContent() {
             Where's my order?
           </h1>
           <p className="text-muted-foreground text-[15px] leading-relaxed  max-w-md">
-            Enter the phone number you used at checkout. We'll pull up every order tied to it.
+            Enter the phone number you used at checkout. We'll pull up every
+            order tied to it.
           </p>
         </div>
 
         <div>
-          <label htmlFor="contact1" className="block text-sm text-muted-foreground mb-2">
+          <label
+            htmlFor="contact1"
+            className="block text-sm text-muted-foreground mb-2"
+          >
             Phone number
           </label>
 
@@ -239,13 +245,19 @@ function TrackOrderContent() {
           <>
             <div className="flex items-center justify-between mt-10 mb-3">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                {orders.length === 1 ? "1 order found" : `${orders.length} orders found`}
+                {orders.length === 1
+                  ? "1 order found"
+                  : `${orders.length} orders found`}
               </p>
               <button
                 onClick={handleCopyLink}
                 className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
-                {copied ? <Check className="h-3.5 w-3.5" /> : <LinkIcon className="h-3.5 w-3.5" />}
+                {copied ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : (
+                  <LinkIcon className="h-3.5 w-3.5" />
+                )}
                 {copied ? "Link copied" : "Copy link to this result"}
               </button>
             </div>
@@ -257,8 +269,10 @@ function TrackOrderContent() {
               className="space-y-3"
             >
               {orders.map((order) => {
-                const cancelled = order.fulfillmentStatus?.toLowerCase() === "cancelled";
-                const delivered = order.fulfillmentStatus?.toLowerCase() === "delivered";
+                const cancelled =
+                  order.fulfillmentStatus?.toLowerCase() === "cancelled";
+                const delivered =
+                  order.fulfillmentStatus?.toLowerCase() === "delivered";
                 const idx = stepIndex(order.fulfillmentStatus);
 
                 return (
@@ -275,18 +289,23 @@ function TrackOrderContent() {
                               Order {order.orderId}
                             </p>
                             <p className="text-xs text-muted-foreground mt-0.5">
-                              {new Date(order.createdAt).toLocaleDateString("en-IN", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              })}{" "}
+                              {new Date(order.createdAt).toLocaleDateString(
+                                "en-IN",
+                                {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                },
+                              )}{" "}
                               · ₹{order.totalAmount}
                             </p>
                           </div>
 
                           {/* Stamped status seal — leans into the shipping-label motif */}
                           <Badge
-                            variant={statusBadgeVariant(order.fulfillmentStatus)}
+                            variant={statusBadgeVariant(
+                              order.fulfillmentStatus,
+                            )}
                             className={`${
                               delivered || cancelled ? "-rotate-3 border-2" : ""
                             } capitalize`}
@@ -313,7 +332,10 @@ function TrackOrderContent() {
                                   const done = i <= idx;
                                   const current = i === idx;
                                   return (
-                                    <div key={step.key} className="flex-1 flex items-center last:flex-none">
+                                    <div
+                                      key={step.key}
+                                      className="flex-1 flex items-center last:flex-none"
+                                    >
                                       <div className="flex flex-col items-center gap-1.5">
                                         <div
                                           className={`h-8 w-8 rounded-full flex items-center justify-center border transition-colors ${
@@ -326,7 +348,9 @@ function TrackOrderContent() {
                                         </div>
                                         <span
                                           className={`text-[10px] text-center ${
-                                            done ? "text-foreground font-medium" : "text-muted-foreground"
+                                            done
+                                              ? "text-foreground font-medium"
+                                              : "text-muted-foreground"
                                           }`}
                                         >
                                           {step.label}
@@ -348,7 +372,10 @@ function TrackOrderContent() {
 
                           {order.expectedDeliveryLabel && !cancelled && (
                             <p className="text-xs text-muted-foreground mt-4">
-                              Expected delivery: <span className="text-foreground font-medium">{order.expectedDeliveryLabel}</span>
+                              Expected delivery:{" "}
+                              <span className="text-foreground font-medium">
+                                {order.expectedDeliveryLabel}
+                              </span>
                             </p>
                           )}
 
@@ -368,16 +395,23 @@ function TrackOrderContent() {
                                   <p className="text-sm text-foreground truncate">
                                     {item.productName}
                                     {item.isFreeItem && (
-                                      <Badge variant="secondary" className="ml-1.5 text-[10px]">
+                                      <Badge
+                                        variant="secondary"
+                                        className="ml-1.5 text-[10px]"
+                                      >
                                         Free
                                       </Badge>
                                     )}
                                   </p>
                                   {item.size && (
-                                    <p className="text-xs text-muted-foreground">Size {item.size}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      Size {item.size}
+                                    </p>
                                   )}
                                 </div>
-                                <p className="text-sm text-muted-foreground shrink-0">₹{item.price}</p>
+                                <p className="text-sm text-muted-foreground shrink-0">
+                                  ₹{item.price}
+                                </p>
                               </div>
                             ))}
                           </div>
@@ -387,7 +421,8 @@ function TrackOrderContent() {
                           <div className="flex items-start gap-2 text-xs text-muted-foreground">
                             <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                             <p>
-                              {order.address}, {order.landmark ? `${order.landmark}, ` : ""}
+                              {order.address},{" "}
+                              {order.landmark ? `${order.landmark}, ` : ""}
                               {order.district}, {order.state} – {order.pincode}
                             </p>
                           </div>

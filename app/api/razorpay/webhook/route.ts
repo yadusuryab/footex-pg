@@ -14,6 +14,9 @@ export async function POST(req: NextRequest) {
     .update(raw)
     .digest("hex");
 
+    console.log("sig:", signature.slice(0, 8), "exp:", expected.slice(0, 8), "secretLen:", process.env.RAZORPAY_WEBHOOK_SECRET?.length);
+
+
   if (
     signature.length !== expected.length ||
     !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))

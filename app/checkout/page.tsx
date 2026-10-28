@@ -3,8 +3,18 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import { CustomerDetailsForm } from "@/components/checkout/checkout-form";
 import { site } from "@/lib/site-config";
 import { client } from "@/sanityClient";
@@ -96,6 +106,7 @@ export default function CheckoutPage() {
   const [formErrors, setFormErrors] = useState<string[]>([]);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [orderDate] = useState<Date>(() => new Date());
+  const [showPayAlert, setShowPayAlert] = useState(false);
 
   const [freeSocksOffer, setFreeSocksOffer] = useState(false);
   const [shoeCleanerAddon, setShoeCleanerAddon] = useState(false);
@@ -138,6 +149,17 @@ export default function CheckoutPage() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [currentStep]);
+
+  // Warn before closing/refreshing the tab while a payment is in progress
+  useEffect(() => {
+    if (!isLoading) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [isLoading]);
 
   const mainProduct = cartItems[0];
   const freeProduct = mainProduct?.freeProduct;
@@ -333,8 +355,8 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
     setCurrentStep("details");
   };
 
-  const handleRazorpayPayment = async () => {
-    // ...touched/form validation unchanged...
+  // Step 1: validate, then show the alert popup
+  const handlePayClick = () => {
     setTouched((prev) => {
       const next = { ...prev };
       REQUIRED_FIELDS.forEach((field) => {
@@ -344,7 +366,11 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
     });
 
     if (!isFormValid) return;
+    setShowPayAlert(true);
+  };
 
+  // Step 2: runs after the user confirms the popup
+  const handleRazorpayPayment = async () => {
     setIsLoading(true);
     setFormErrors([]);
 
@@ -451,11 +477,21 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
   if (!cartItems.length || !mainProduct) {
     return <EmptyCart isInvalid={cartItems.length > 0} />;
   }
-  console.log(JSON.parse(localStorage.getItem("cart") || "[]"));
   return (
-    <main className="container mx-auto px-4 max-w-2xl min-h-screen pb-28">
+    <main className="container mx-auto px-4 max-w-2xl min-h-screen pb-32">
       <div className="py-6">
         <StepProgress currentStep={currentStep} />
+
+        {isLoading && (
+          <Alert className="mb-4 rounded-xl border-amber-400 bg-amber-50 text-amber-900">
+            <AlertTriangle className="h-4 w-4 !text-amber-600" />
+            <AlertDescription className="font-medium">
+              Payment in progress. Please don&apos;t close, refresh or go back
+              until you reach the order confirmation page. If you switch UPI
+              apps, return to this page after paying.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {formErrors.length > 0 && (
           <Alert variant="destructive" className="mb-4 rounded-xl">
@@ -520,7 +556,7 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
         <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t py-2">
           <div className="container mx-auto px-4 max-w-2xl">
             <Button
-              onClick={handleRazorpayPayment}
+              onClick={handlePayClick}
               disabled={isLoading}
               className="w-full h-12 text-sm font-medium rounded-md flex items-center gap-2"
             >
@@ -539,13 +575,52 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
                 Fill all required fields to continue
               </p>
             )}
-            <p className="text-xs text-center text-muted-foreground mt-2">
+            <p className="text-xs text-center font-medium text-amber-700 mt-2">
+              ⚠️ Don&apos;t close or leave this page until payment is complete
+              and you see the confirmation.
+            </p>
+            <p className="text-xs text-center text-muted-foreground mt-1">
               Secure payment via Razorpay · Estimated delivery{" "}
               {activeDelivery.label}
             </p>
           </div>
         </div>
       )}
+
+      <AlertDialog open={showPayAlert} onOpenChange={setShowPayAlert}>
+        <AlertDialogContent className="max-w-sm rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              Important before you pay
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-left">
+                <p>
+                  Do <strong>not</strong> close, refresh or go back until you
+                  see the <strong>order confirmation page</strong>.
+                </p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Switching UPI apps is fine, but return to this page after paying.</li>
+                  <li>Your order is confirmed only after the confirmation page appears.</li>
+                  <li>If money is deducted and you don&apos;t see it, WhatsApp us with your payment screenshot.</li>
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-2">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowPayAlert(false);
+                handleRazorpayPayment();
+              }}
+            >
+              I understand, continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 }

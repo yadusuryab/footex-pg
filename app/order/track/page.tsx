@@ -13,6 +13,8 @@ import {
   Loader2,
   Link as LinkIcon,
   Check,
+  MessageCircle,
+  User,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -28,8 +30,12 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
+// 👇 Adjust this path to wherever your site config file lives
+import { site } from "@/lib/site-config";
+
 interface OrderItem {
   productName: string;
+  productId?: string;
   size?: string;
   price: number;
   isFreeItem?: boolean;
@@ -83,6 +89,72 @@ function statusBadgeVariant(
 // Only paid orders are shown (hides pending / failed payments)
 function isPaid(order: Order) {
   return order.paymentStatus?.toLowerCase() === "paid";
+}
+
+// WhatsApp needs country code + number, digits only.
+// site.social.whatsapp is "9656060874" (10 digits), so we prefix 91 (India).
+function getWhatsAppNumber() {
+  const digits = String(site.social?.whatsapp ?? site.phone ?? "").replace(
+    /\D/g,
+    "",
+  );
+  return digits.length === 10 ? `91${digits}` : digits;
+}
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+// Product links: https://footex.in/p/<productId>
+const SITE_URL = "https://footex.in";
+const PRODUCT_PATH = "/p/";
+
+function productPath(item: OrderItem) {
+  if (!item.productId) return null;
+  // Strip Sanity's draft prefix if present so the link never breaks
+  const id = item.productId.replace(/^drafts\./, "");
+  return `${PRODUCT_PATH}${id}`;
+}
+
+function productUrl(item: OrderItem) {
+  const path = productPath(item);
+  return path ? `${SITE_URL}${path}` : null;
+}
+
+// Builds a wa.me link with the order details pre-filled as the message.
+function buildWhatsAppLink(order: Order) {
+  const itemLines = order.items
+    .map((it, i) => {
+      const url = productUrl(it);
+      return [
+        `Pair ${i + 1}: ${it.productName}${it.size ? ` (Size ${it.size})` : ""}${
+          it.isFreeItem ? " - FREE" : ` - ₹${it.price}`
+        }`,
+        url,
+      ]
+        .filter(Boolean)
+        .join("\n");
+    })
+    .join("\n\n");
+
+  const message = [
+    `Hi ${site.name}! I need help with my order.`,
+    ``,
+    `Order ID: ${order.orderId}`,
+    `Name: ${order.customerName}`,
+    `Date: ${formatDate(order.createdAt)}`,
+    `Status: ${order.fulfillmentStatus}`,
+    `Total: ₹${order.totalAmount}`,
+    ``,
+    `Items:`,
+    itemLines,
+  ].join("\n");
+
+  return `https://wa.me/${getWhatsAppNumber()}?text=${encodeURIComponent(message)}`;
 }
 
 // Perforated divider — the "tear line" on a shipping manifest / receipt.
@@ -288,16 +360,14 @@ function TrackOrderContent() {
                             <p className="text-sm font-semibold text-foreground">
                               Order {order.orderId}
                             </p>
+                            {order.customerName && (
+                              <p className="text-xs text-foreground/80 mt-0.5">
+                                {order.customerName}
+                              </p>
+                            )}
                             <p className="text-xs text-muted-foreground mt-0.5">
-                              {new Date(order.createdAt).toLocaleDateString(
-                                "en-IN",
-                                {
-                                  day: "numeric",
-                                  month: "short",
-                                  year: "numeric",
-                                },
-                              )}{" "}
-                              · ₹{order.totalAmount}
+                              {formatDate(order.createdAt)} · ₹
+                              {order.totalAmount}
                             </p>
                           </div>
 
@@ -393,7 +463,16 @@ function TrackOrderContent() {
                                 )}
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm text-foreground truncate">
-                                    {item.productName}
+                                    {productPath(item) ? (
+                                      <a
+                                        href={productPath(item)!}
+                                        className="hover:underline"
+                                      >
+                                        {item.productName}
+                                      </a>
+                                    ) : (
+                                      item.productName
+                                    )}
                                     {item.isFreeItem && (
                                       <Badge
                                         variant="secondary"
@@ -418,14 +497,38 @@ function TrackOrderContent() {
 
                           <Perforation />
 
-                          <div className="flex items-start gap-2 text-xs text-muted-foreground">
-                            <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                            <p>
-                              {order.address},{" "}
-                              {order.landmark ? `${order.landmark}, ` : ""}
-                              {order.district}, {order.state} – {order.pincode}
-                            </p>
+                          <div className="space-y-2 text-xs text-muted-foreground">
+                            {order.customerName && (
+                              <div className="flex items-center gap-2">
+                                <User className="h-3.5 w-3.5 shrink-0" />
+                                <p className="text-foreground font-medium">
+                                  {order.customerName}
+                                </p>
+                              </div>
+                            )}
+                            <div className="flex items-start gap-2">
+                              <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                              <p>
+                                {order.address},{" "}
+                                {order.landmark ? `${order.landmark}, ` : ""}
+                                {order.district}, {order.state} –{" "}
+                                {order.pincode}
+                              </p>
+                            </div>
                           </div>
+
+                          <Perforation />
+
+                          <Button asChild variant="outline" className="w-full">
+                            <a
+                              href={buildWhatsAppLink(order)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <MessageCircle className="h-4 w-4" />
+                              Need help? Chat on WhatsApp
+                            </a>
+                          </Button>
                         </CardContent>
                       </AccordionContent>
                     </Card>

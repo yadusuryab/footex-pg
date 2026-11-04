@@ -23,6 +23,7 @@ import { fbEvent, fbTrackCustom } from "@/lib/fbq";
 import { OrderSummary } from "@/components/checkout/order-summary";
 import {
   BASE_PRICE,
+  ONE_PAIR_PRICE,
   COD_CHARGE,
   SHOE_CLEANER_PRICE,
   ONLINE_DELIVERY_MIN_DAYS,
@@ -162,16 +163,26 @@ export default function CheckoutPage() {
   }, [isLoading]);
 
   const mainProduct = cartItems[0];
-  const freeProduct = mainProduct?.freeProduct;
+
+  // ✅ Offer type set by useAddToCart. Missing/unknown = two pair (original behavior).
+  const offerType: "one-pair" | "two-pair" =
+    mainProduct?.offerType === "one-pair" ? "one-pair" : "two-pair";
+  const isOnePair = offerType === "one-pair";
+
+  // Free pair only exists in the two pair offer
+  const freeProduct = isOnePair ? undefined : mainProduct?.freeProduct;
+
+  // ✅ Base price depends on the offer
+  const offerBasePrice = isOnePair ? ONE_PAIR_PRICE : BASE_PRICE;
+
   const pair1Extra = Math.max(
     0,
-    (mainProduct?.price || BASE_PRICE) - BASE_PRICE,
+    (mainProduct?.price || offerBasePrice) - offerBasePrice,
   );
-  const pair2Extra = Math.max(
-    0,
-    (freeProduct?.price || BASE_PRICE) - BASE_PRICE,
-  );
-  const subtotal = BASE_PRICE + pair1Extra + pair2Extra;
+  const pair2Extra = isOnePair
+    ? 0
+    : Math.max(0, (freeProduct?.price || BASE_PRICE) - BASE_PRICE);
+  const subtotal = offerBasePrice + pair1Extra + pair2Extra;
   const shippingCharge = shippingMethod === "online" ? 0 : COD_CHARGE;
   const cleanerCharge =
     shoeCleanerAddon && addShoeCleaner ? SHOE_CLEANER_PRICE : 0;
@@ -242,6 +253,9 @@ export default function CheckoutPage() {
     setTouched((prev) => ({ ...prev, [name]: true }));
   };
 
+  // Free pair is only included in the two pair offer
+  const hasFreePair = !isOnePair && !!mainProduct?.buyOneGetOne && !!freeProduct;
+
   const buildOrderPayload = () => {
     const items = [
       {
@@ -249,11 +263,11 @@ export default function CheckoutPage() {
         imageUrl: mainProduct?.imageUrl,
         productName: mainProduct?.productName,
         size: mainProduct?.selectedSize,
-        price: mainProduct?.price || BASE_PRICE,
+        price: mainProduct?.price || offerBasePrice,
         isFreeItem: false,
       },
     ];
-    if (mainProduct?.buyOneGetOne && freeProduct) {
+    if (hasFreePair && freeProduct) {
       items.push({
         productId: freeProduct._id,
         imageUrl: freeProduct.imageUrl,
@@ -264,6 +278,7 @@ export default function CheckoutPage() {
       });
     }
     return {
+      offerType,
       items,
       customerDetails,
       shippingMethod,
@@ -284,8 +299,7 @@ export default function CheckoutPage() {
   // payment success below.
   const buildPixelPayload = () => {
     const ids = [mainProduct?._id].filter(Boolean) as string[];
-    if (mainProduct?.buyOneGetOne && freeProduct?._id)
-      ids.push(freeProduct._id);
+    if (hasFreePair && freeProduct?._id) ids.push(freeProduct._id);
     return {
       content_ids: ids,
       content_type: "product" as const,
@@ -299,13 +313,15 @@ export default function CheckoutPage() {
     const pairLines = [
       `*PAIR 1 :* ${SITE_ORIGIN}/p/${mainProduct?._id}\nSize: ${mainProduct?.selectedSize || "N/A"}`,
     ];
-    if (mainProduct?.buyOneGetOne && freeProduct) {
+    if (hasFreePair && freeProduct) {
       pairLines.push(
         `*PAIR 2 :* ${SITE_ORIGIN}/p/${freeProduct._id}\nSize: ${freeProduct.selectedSize || "N/A"}`,
       );
     }
 
-    return `*ORDER CONFIRMATION – 2 PAIR COMBO*
+    const title = isOnePair ? "1 PAIR OFFER" : "2 PAIR COMBO";
+
+    return `*ORDER CONFIRMATION – ${title}*
 ⚠️ ${reason}. Please confirm this order manually.
 
 *CUSTOMER INFORMATION*
@@ -389,7 +405,7 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
           isFreeItem: false,
         },
       ];
-      if (mainProduct.buyOneGetOne && freeProduct) {
+      if (hasFreePair && freeProduct) {
         lines.push({
           productId: freeProduct._id,
           selectedSize: freeProduct.selectedSize,
@@ -401,6 +417,7 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          offerType, // 👈 server uses this to pick the base price
           lines,
           customerDetails,
           shippingMethod,
@@ -423,7 +440,9 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
         name: site.name || "Footex",
         description: isCod
           ? `COD Advance Payment (₹${COD_ADVANCE_AMOUNT})`
-          : "2 Pair Shoes Order",
+          : isOnePair
+            ? "1 Pair Shoes Order"
+            : "2 Pair Shoes Order",
         order_id: razorpayOrder.id,
         prefill: {
           name: customerDetails.name,

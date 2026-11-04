@@ -8,6 +8,7 @@ export interface CartItem {
   images?: Array<{ asset: { url: string } }>;
   buyOneGetOne?: boolean;
   freeProduct?: CartItem;
+  offerType?: "one-pair" | "two-pair";
 }
 
 export type CheckoutStep = "payment" | "details";

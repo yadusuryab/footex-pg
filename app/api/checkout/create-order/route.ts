@@ -1,4 +1,3 @@
-// app/api/checkout/create-order/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import Razorpay from "razorpay";
 import { serverClient } from "@/lib/sanity-server";
@@ -15,31 +14,58 @@ const razorpay = new Razorpay({
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { lines, customerDetails, shippingMethod, addShoeCleaner, freeSocksOffer } = body ?? {};
+    const {
+      lines,
+      customerDetails,
+      shippingMethod,
+      addShoeCleaner,
+      freeSocksOffer,
+    } = body ?? {};
+
+    // Anything other than "one-pair" is treated as two pair (original behavior)
+    const offerType = body?.offerType === "one-pair" ? "one-pair" : "two-pair";
+    const isOnePair = offerType === "one-pair";
 
     // ---- 1. Validate inputs ----
     if (!Array.isArray(lines) || lines.length === 0) {
       return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
     }
+
+    // One pair offer: exactly one paid line, never a free item
+    if (isOnePair && (lines.length !== 1 || lines[0]?.isFreeItem)) {
+      return NextResponse.json(
+        { error: "Invalid one pair order" },
+        { status: 400 },
+      );
+    }
+
     if (shippingMethod !== "online" && shippingMethod !== "cod") {
-      return NextResponse.json({ error: "Invalid shipping method" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid shipping method" },
+        { status: 400 },
+      );
     }
     const custErrors = validateCustomer(customerDetails ?? {});
     if (custErrors.length) {
-      return NextResponse.json({ error: "Invalid customer details", details: custErrors }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid customer details", details: custErrors },
+        { status: 400 },
+      );
     }
 
     // ---- 2. Re-price server-side ----
     const priced = await priceCart(serverClient, lines, {
       shippingMethod,
       addShoeCleaner: !!addShoeCleaner,
-    });
+      offerType,
+    } as Parameters<typeof priceCart>[2] & { offerType: typeof offerType });
 
     // ---- 3. Create Sanity order (payment pending) ----
     const orderId = generateOrderId();
     const sanityDoc = {
       _type: "order",
       orderId,
+      offerType, // 👈 saved so you can see which offer the order used
       items: priced.items.map((it) => ({
         _key: it.productId + it.size,
         _type: "orderItem",
@@ -71,7 +97,7 @@ export async function POST(req: NextRequest) {
       createdAt: new Date().toISOString(),
     };
     const created = await serverClient.create(sanityDoc);
-    console.log("Created Sanity order:", created);
+
     // ---- 4. Create Razorpay order ----
     const rzpOrder = await razorpay.orders.create({
       amount: priced.paymentAmount * 100,
@@ -80,6 +106,7 @@ export async function POST(req: NextRequest) {
       notes: {
         sanityOrderId: created._id,
         sanityOrderId_human: orderId,
+        offerType,
         isCod: String(priced.isCod),
         remainingAmount: String(priced.remainingAmount),
       },
@@ -106,6 +133,9 @@ export async function POST(req: NextRequest) {
     });
   } catch (e: any) {
     console.error("[checkout/create-order]", e);
-    return NextResponse.json({ error: e.message || "Could not create order" }, { status: 500 });
+    return NextResponse.json(
+      { error: e.message || "Could not create order" },
+      { status: 500 },
+    );
   }
 }

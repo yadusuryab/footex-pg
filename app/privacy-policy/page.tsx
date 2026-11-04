@@ -1,6 +1,8 @@
 import Head from 'next/head';
 import Link from 'next/link';
 
+// @next-codemod-ignore Cache Components adoption: this segment temporarily allows blocking.
+
 export default function PrivacyPolicy() {
   return (
     <>

@@ -1,5 +1,7 @@
 import Head from 'next/head';
 
+// @next-codemod-ignore Cache Components adoption: this segment temporarily allows blocking.
+
 export default function CookiesPolicy() {
   return (
     <>

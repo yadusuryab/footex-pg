@@ -1,6 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import React from "react";
 
+// @next-codemod-ignore Cache Components adoption: this segment temporarily allows blocking.
+
 const TermsAndConditions = () => {
   return (
    // Add this component right before the fixed bottom button section

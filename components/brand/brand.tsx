@@ -1,26 +1,20 @@
 import { site } from "@/lib/site-config";
-import React from "react";
 
-interface BrandProps {
-  small?: boolean;
-  className?: string;
-}
-
-const Brand: React.FC<BrandProps> = ({ small = false, className = "" }) => {
-  // ✅ OPTIMIZED: If SVG, use inline SVG or optimized file
+export default function Brand({ small = false, className = "" }: { small?: boolean; className?: string }) {
+  const size = small ? 64 : 110;
   return (
     <div className={className}>
-      {/* If SVG file is already optimized, keep using Image */}
+      {/* SVGs skip next/image optimisation anyway, so a plain <img> is the lightest option */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/logo-web.svg" // ✅ Direct path if SVG
-        width={small ? 64 : 110}
-        height={small ? 64 : 110}
+        src="/logo-web.svg"
+        width={size}
+        height={size}
         alt={site.name}
-        className={`object-contain ${small ? "max-w-full" : "max-w-full"}`}
-        loading="eager"
+        className="max-w-full object-contain"
+        fetchPriority="high"
+        decoding="async"
       />
     </div>
   );
-};
-
-export default Brand;
+}

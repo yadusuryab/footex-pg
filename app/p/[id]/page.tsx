@@ -11,6 +11,8 @@ import ProductCarousel from "@/components/product/product-carousel";
 import SHeading from "@/components/utils/section-heading";
 import AddToCartButton from "@/components/cart/cart-buttons/add-to-cart";
 
+// @next-codemod-ignore Cache Components adoption: this segment temporarily allows blocking.
+
 interface ProductProps {
   params: Promise<{ id: string }>;
 }

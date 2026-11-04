@@ -254,7 +254,8 @@ export default function CheckoutPage() {
   };
 
   // Free pair is only included in the two pair offer
-  const hasFreePair = !isOnePair && !!mainProduct?.buyOneGetOne && !!freeProduct;
+  const hasFreePair =
+    !isOnePair && !!mainProduct?.buyOneGetOne && !!freeProduct;
 
   const buildOrderPayload = () => {
     const items = [
@@ -620,9 +621,18 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
                   see the <strong>order confirmation page</strong>.
                 </p>
                 <ul className="list-disc list-inside space-y-1">
-                  <li>Switching UPI apps is fine, but return to this page after paying.</li>
-                  <li>Your order is confirmed only after the confirmation page appears.</li>
-                  <li>If money is deducted and you don&apos;t see it, WhatsApp us with your payment screenshot.</li>
+                  <li>
+                    Switching UPI apps is fine, but return to this page after
+                    paying.
+                  </li>
+                  <li>
+                    Your order is confirmed only after the confirmation page
+                    appears.
+                  </li>
+                  <li>
+                    If money is deducted and you don&apos;t see it, WhatsApp us
+                    with your payment screenshot.
+                  </li>
                 </ul>
               </div>
             </AlertDialogDescription>

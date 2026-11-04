@@ -3,77 +3,45 @@ import { Poppins } from "next/font/google";
 import "./globals.css";
 import { site } from "@/lib/site-config";
 import { Toaster } from "@/components/ui/sonner";
-import Header from "@/components/layout/header";
+import Header from "@/components/layout/header/header";
 import { Footer } from "@/components/layout/footer";
 import GoogleTagManager from "@/components/analyatics/GoogleTagManager";
 import MetaPixel from "@/components/analyatics/MetaPixel";
 import { WhatsAppButton } from "@/components/utils/wp";
 
-// ✅ OPTIMIZED: Preload only necessary font weights
+// next/font self-hosts this at build time: no requests to Google at runtime.
+// One file per weight, so only list weights you really use (see the grep in the notes).
 const poppins = Poppins({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"], // ✅ Added multiple weights
-  display: "swap", // ✅ Better performance
-  preload: true, // ✅ Keep preload for critical font
-  fallback: ["system-ui", "arial"], // ✅ Better fallback
+  weight: ["400", "500", "600", "700", "900"],
+  fallback: ["system-ui", "arial"],
 });
 
 export const metadata: Metadata = {
-  title: {
-    default: site.name,
-    template: `%s | ${site.name}`, // ✅ Better SEO
-  },
+  title: { default: site.name, template: `%s | ${site.name}` },
   description: "Buy quality products at affordable price.",
-  keywords: ["shoes", "footwear", "fashion", "affordable"], // ✅ Added for SEO
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+const prod = process.env.NODE_ENV === "production";
+
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        {/* ✅ OPTIMIZED: Preconnect to critical domains */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin=""
-        />
-
-        {/* ✅ OPTIMIZED: Add favicon links */}
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link
-          rel="icon"
-          href="/icon?<generated>"
-          type="image/<generated>"
-          sizes="<generated>"
-        />
-        <link
-          rel="apple-touch-icon"
-          href="/apple-touch-icon?<generated>"
-          type="image/<generated>"
-          sizes="<generated>"
-        />
-      </head>
-      <MetaPixel />
-
-      <body className={`${poppins.className} antialiased `}>
-        {/* ✅ OPTIMIZED: Consider lazy loading non-critical components */}
+      {/* No manual <head>: Next injects the font, favicon (app/favicon.ico, app/icon.*, app/apple-icon.*) and metadata */}
+      <body className={`${poppins.className} antialiased`}>
         <Header />
-        <main className="py-0 min-h-screen">
-          {" "}
-          {/* ✅ Added main tag for semantics */}
-          {children}
-          <WhatsAppButton />
-        </main>
+        <main className="min-h-screen">{children}</main>
         <Footer />
+        <WhatsAppButton />
         <Toaster />
 
-        {/* ✅ OPTIMIZED: Load GTM only in production */}
-        {process.env.NODE_ENV === "production" && <GoogleTagManager />}
+        {/* Trackers: production only, after the page content */}
+        {prod && (
+          <>
+            <MetaPixel />
+            <GoogleTagManager />
+          </>
+        )}
       </body>
     </html>
   );

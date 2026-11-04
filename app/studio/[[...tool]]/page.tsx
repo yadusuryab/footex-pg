@@ -10,6 +10,8 @@
 import { NextStudio } from 'next-sanity/studio'
 import config from '../../../sanity.config'
 
+// @next-codemod-ignore Cache Components adoption: this segment temporarily allows blocking.
+
 export const dynamic = 'force-static'
 
 export { metadata, viewport } from 'next-sanity/studio'

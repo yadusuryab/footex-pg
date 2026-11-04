@@ -30,7 +30,7 @@ export function FreeSocksPromo() {
       <div className="relative flex items-center gap-3 px-2 pt-2 pb-9">
         <div className="relative shrink-0">
           <Image
-            src="/promo/2.jpeg"
+            src="/promo/2-100.avif"
             alt="Flame socks"
             width={100}
             height={100}

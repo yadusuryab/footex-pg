@@ -65,23 +65,27 @@ function Summary({
 
   return (
     <aside className="lg:sticky lg:top-20 lg:self-start">
-
       <div className="mt-3 grid gap-6 sm:grid-cols-2 lg:grid-cols-1">
-              <div className="flex justify-between items-center gap-3">
-              <div className="w-full">  <h2 className="text-xl sm:text-2xl font-semibold ">Customer reviews</h2>
-           <p className="text-sm text-muted-foreground font-semibold mt-1">
-            {total} {total === 1 ? "rating" : "ratings"}
-          </p>   </div>
-
-        <div className="flex flex-col items-end gap-1">
-          <div className="flex rounded-full items-center gap-3 flex-wrap">
-            <Stars value={avg} size={22} />
-            
+        <div className="flex justify-between items-center gap-3">
+          <div className="w-full">
+            {" "}
+            <h2 className="text-xl sm:text-2xl font-semibold ">
+              Customer reviews
+            </h2>
+            <p className="text-sm text-muted-foreground font-semibold mt-1">
+              {total} {total === 1 ? "rating" : "ratings"}
+            </p>{" "}
           </div>
-          <span className="text-xs font-semibold text-muted-foreground">{avg.toFixed(1)} out of 5</span>
-          
+
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex rounded-full items-center gap-3 flex-wrap">
+              <Stars value={avg} size={22} />
+            </div>
+            <span className="text-xs font-semibold text-muted-foreground">
+              {avg.toFixed(1)} out of 5
+            </span>
+          </div>
         </div>
-              </div>
 
         {/* <div className="sm:row-span-2 lg:row-span-1">
           <ul className="space-y-1">
@@ -125,7 +129,9 @@ function Summary({
 
         <div className="lg:border-t lg:pt-5 bg-muted px-2 py-1 rounded-md">
           <h3 className="font-semibold">Review this product</h3>
-          <p className="text-sm text-gray-600 mt-1">Share your thoughts and photos.</p>
+          <p className="text-sm text-gray-600 mt-1">
+            Share your thoughts and photos.
+          </p>
           <button
             type="button"
             onClick={onWrite}
@@ -165,7 +171,13 @@ function PhotoStrip({
             className="relative shrink-0 snap-start w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900"
             aria-label={`Open customer photo ${i + 1}`}
           >
-            <Image src={src} alt="" fill sizes="96px" className="object-cover" />
+            <Image
+              src={src}
+              alt=""
+              fill
+              sizes="96px"
+              className="object-cover"
+            />
             {i === shown.length - 1 && extra > 0 && (
               <span className="absolute inset-0 bg-black/55 text-white text-sm font-medium flex items-center justify-center">
                 +{extra}
@@ -211,7 +223,9 @@ function ReviewItem({
       <div className="flex items-center gap-2 mt-2">
         <Stars value={review.rating} />
         {review.isVerifiedPurchase && (
-          <span className="text-xs font-medium text-green-700">Verified Purchase</span>
+          <span className="text-xs font-medium text-green-700">
+            Verified Purchase
+          </span>
         )}
       </div>
       <p className="text-xs text-gray-500 mt-1">Reviewed on {date}</p>
@@ -241,7 +255,13 @@ function ReviewItem({
               className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden bg-gray-100 border focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900"
               aria-label={`Open photo ${i + 1} by ${review.customerName}`}
             >
-              <Image src={src} alt="" fill sizes="80px" className="object-cover" />
+              <Image
+                src={src}
+                alt=""
+                fill
+                sizes="80px"
+                className="object-cover"
+              />
             </button>
           ))}
         </div>
@@ -265,11 +285,11 @@ function LightboxView({
   const touchX = useRef<number | null>(null);
   const prev = useCallback(
     () => onChange((index - 1 + urls.length) % urls.length),
-    [index, urls.length, onChange]
+    [index, urls.length, onChange],
   );
   const next = useCallback(
     () => onChange((index + 1) % urls.length),
-    [index, urls.length, onChange]
+    [index, urls.length, onChange],
   );
 
   useEffect(() => {
@@ -385,13 +405,13 @@ export default function ReviewsPage({ shoeId }: { shoeId?: string }) {
             createdAt,
             "images": reviewImages[].asset->url
           }`,
-        shoeId ? { shoeId } : {}
+        shoeId ? { shoeId } : {},
       );
       setReviews(
         data.map((r) => ({
           ...r,
           images: (r.images ?? []).filter(Boolean),
-        }))
+        })),
       );
     } catch (e) {
       console.error("Error fetching reviews:", e);
@@ -420,7 +440,7 @@ export default function ReviewsPage({ shoeId }: { shoeId?: string }) {
 
   const openLightbox = useCallback(
     (urls: string[], index: number) => setLightbox({ urls, index }),
-    []
+    [],
   );
   const closeLightbox = useCallback(() => setLightbox(null), []);
 
@@ -452,7 +472,9 @@ export default function ReviewsPage({ shoeId }: { shoeId?: string }) {
     return (
       <section className="py-24 flex flex-col items-center px-4 text-center">
         <p className="text-lg font-medium text-gray-800">No reviews yet</p>
-        <p className="text-sm text-gray-500 mt-1 mb-5">Be the first to review.</p>
+        <p className="text-sm text-gray-500 mt-1 mb-5">
+          Be the first to review.
+        </p>
         <button
           type="button"
           onClick={() => setShowForm(true)}
@@ -460,7 +482,9 @@ export default function ReviewsPage({ shoeId }: { shoeId?: string }) {
         >
           Write a review
         </button>
-        {showForm && <ReviewForm shoeId={shoeId} onClose={() => setShowForm(false)} />}
+        {showForm && (
+          <ReviewForm shoeId={shoeId} onClose={() => setShowForm(false)} />
+        )}
       </section>
     );
   }
@@ -531,7 +555,9 @@ export default function ReviewsPage({ shoeId }: { shoeId?: string }) {
         />
       )}
 
-      {showForm && <ReviewForm shoeId={shoeId} onClose={() => setShowForm(false)} />}
+      {showForm && (
+        <ReviewForm shoeId={shoeId} onClose={() => setShowForm(false)} />
+      )}
     </section>
   );
 }

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
-import Poster from "@/public/p3.avif";
+import Poster from "@/public/h-500.avif";
 import { client } from "@/sanityClient";
 import { RainbowButton } from "../ui/rainbow-button";
 import { LinkPending } from "./link-pending";
@@ -28,10 +28,10 @@ export async function Hero() {
           <Image
             src={banner?.imageUrl || Poster}
             alt={banner?.title || "BOGO at ₹999"}
-            width={1080}
-            height={1080}
+            width={300}
+            height={300}
             priority
-            quality={60}
+          
             sizes="(max-width: 767px) 100vw, 400px"
             className="h-auto w-full"
           />

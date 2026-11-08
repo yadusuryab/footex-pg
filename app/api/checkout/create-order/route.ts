@@ -3,6 +3,7 @@ import Razorpay from "razorpay";
 import { serverClient } from "@/lib/sanity-server";
 import { priceCart, generateOrderId } from "@/lib/checkout-pricing";
 import { validateCustomer } from "@/lib/checkout-validation";
+import { INDIAN_STATES } from "@/lib/indian-states";
 
 export const runtime = "nodejs";
 
@@ -53,19 +54,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // State drives the outside-Kerala shipping charge, so it must be a real state
+    const state = String(customerDetails?.state ?? "").trim();
+    if (!INDIAN_STATES.includes(state)) {
+      return NextResponse.json({ error: "Select a valid state" }, { status: 400 });
+    }
+
     // ---- 2. Re-price server-side ----
     const priced = await priceCart(serverClient, lines, {
       shippingMethod,
       addShoeCleaner: !!addShoeCleaner,
       offerType,
-    } as Parameters<typeof priceCart>[2] & { offerType: typeof offerType });
+      state,
+    } as Parameters<typeof priceCart>[2] & {
+      offerType: typeof offerType;
+      state: string;
+    });
 
     // ---- 3. Create Sanity order (payment pending) ----
     const orderId = generateOrderId();
     const sanityDoc = {
       _type: "order",
       orderId,
-      offerType, // 👈 saved so you can see which offer the order used
+      offerType, // saved so you can see which offer the order used
       items: priced.items.map((it) => ({
         _key: it.productId + it.size,
         _type: "orderItem",
@@ -82,7 +93,7 @@ export async function POST(req: NextRequest) {
       contact2: customerDetails.contact2 || "",
       address: customerDetails.address,
       district: customerDetails.district,
-      state: customerDetails.state,
+      state,
       pincode: customerDetails.pincode,
       landmark: customerDetails.landmark || "",
       shippingMethod,

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { formatDeliveryDate } from "@/lib/checkout-utils";
 import {
   BASE_PRICE,
-  COD_CHARGE,
+  ONE_PAIR_PRICE,
   SHOE_CLEANER_PRICE,
   ONLINE_DELIVERY_MIN_DAYS,
   ONLINE_DELIVERY_MAX_DAYS,
@@ -12,21 +12,29 @@ import {
 } from "@/lib/checkout-constants";
 
 export function OrderSummary({
+  isOnePair,
   pair1Extra,
   pair2Extra,
   freeSocksOffer,
   shoeCleanerAddon,
   addShoeCleaner,
   shippingMethod,
+  shippingCharge,
+  outsideKeralaExtra,
+  prepaidSavings,
   activeDeliveryEnd,
   totalAmount,
 }: {
+  isOnePair: boolean;
   pair1Extra: number;
   pair2Extra: number;
   freeSocksOffer: boolean;
   shoeCleanerAddon: boolean;
   addShoeCleaner: boolean;
   shippingMethod: "online" | "cod";
+  shippingCharge: number;
+  outsideKeralaExtra: number;
+  prepaidSavings: number;
   activeDeliveryEnd: Date;
   totalAmount: number;
 }) {
@@ -34,8 +42,10 @@ export function OrderSummary({
     <div className="mt-6 rounded-2xl bg-muted/40 p-5">
       <div className="space-y-2.5">
         <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Base price (2 pairs)</span>
-          <span>₹{BASE_PRICE}</span>
+          <span className="text-muted-foreground">
+            Base price ({isOnePair ? "1 pair" : "2 pairs"})
+          </span>
+          <span>₹{isOnePair ? ONE_PAIR_PRICE : BASE_PRICE}</span>
         </div>
         {pair1Extra > 0 && (
           <div className="flex justify-between text-xs text-muted-foreground pl-3">
@@ -67,12 +77,18 @@ export function OrderSummary({
         )}
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Shipping</span>
-          {shippingMethod === "online" ? (
+          {shippingCharge === 0 ? (
             <span className="font-medium">Free</span>
           ) : (
-            <span>₹{COD_CHARGE}</span>
+            <span>₹{shippingCharge}</span>
           )}
         </div>
+        {outsideKeralaExtra > 0 && (
+          <div className="flex justify-between text-xs text-muted-foreground pl-3">
+            <span>Outside Kerala (included above)</span>
+            <span>+₹{outsideKeralaExtra}</span>
+          </div>
+        )}
 
         <div className="rounded-xl bg-background p-4 flex items-center gap-3 mt-1">
           <Truck className="h-5 w-5 text-muted-foreground shrink-0" strokeWidth={1.75} />
@@ -94,9 +110,9 @@ export function OrderSummary({
           <span>₹{totalAmount}</span>
         </div>
 
-        {shippingMethod === "cod" && (
+        {shippingMethod === "cod" && prepaidSavings > 0 && (
           <p className="text-xs text-muted-foreground text-center">
-            Switch to prepaid to save ₹{COD_CHARGE}
+            Switch to prepaid to save ₹{prepaidSavings}
           </p>
         )}
 

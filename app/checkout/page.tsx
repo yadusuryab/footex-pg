@@ -24,13 +24,14 @@ import { OrderSummary } from "@/components/checkout/order-summary";
 import {
   BASE_PRICE,
   ONE_PAIR_PRICE,
-  COD_CHARGE,
   SHOE_CLEANER_PRICE,
   ONLINE_DELIVERY_MIN_DAYS,
   ONLINE_DELIVERY_MAX_DAYS,
   COD_DELIVERY_MIN_DAYS,
   COD_DELIVERY_MAX_DAYS,
 } from "@/lib/checkout-constants";
+import { getShippingBreakdown } from "@/lib/checkout-shipping";
+import { DEFAULT_STATE } from "@/lib/indian-states";
 import { StepProgress } from "@/components/checkout/step-progress";
 import { CartItem } from "@/lib/types/checkout";
 import { CheckoutStep, CustomerDetails } from "@/lib/types/checkout";
@@ -98,7 +99,7 @@ export default function CheckoutPage() {
     contact2: "",
     address: "",
     district: "",
-    state: "",
+    state: DEFAULT_STATE,
     pincode: "",
     landmark: "",
     instagramId: "",
@@ -164,7 +165,7 @@ export default function CheckoutPage() {
 
   const mainProduct = cartItems[0];
 
-  // ✅ Offer type set by useAddToCart. Missing/unknown = two pair (original behavior).
+  // Offer type set by useAddToCart. Missing/unknown = two pair (original behavior).
   const offerType: "one-pair" | "two-pair" =
     mainProduct?.offerType === "one-pair" ? "one-pair" : "two-pair";
   const isOnePair = offerType === "one-pair";
@@ -172,18 +173,41 @@ export default function CheckoutPage() {
   // Free pair only exists in the two pair offer
   const freeProduct = isOnePair ? undefined : mainProduct?.freeProduct;
 
-  // ✅ Base price depends on the offer
+  // Base price depends on the offer
   const offerBasePrice = isOnePair ? ONE_PAIR_PRICE : BASE_PRICE;
 
-  const pair1Extra = Math.max(
-    0,
-    (mainProduct?.price || offerBasePrice) - offerBasePrice,
-  );
+  // One pair: flat price for any shoe, never an extra.
+  // Two pair: extra only when a pair costs more than the standard price.
+  const pair1Extra = isOnePair
+    ? 0
+    : Math.max(0, (mainProduct?.price || BASE_PRICE) - BASE_PRICE);
   const pair2Extra = isOnePair
     ? 0
     : Math.max(0, (freeProduct?.price || BASE_PRICE) - BASE_PRICE);
   const subtotal = offerBasePrice + pair1Extra + pair2Extra;
-  const shippingCharge = shippingMethod === "online" ? 0 : COD_CHARGE;
+
+  // Shipping depends on offer, payment method and selected state (Kerala vs outside)
+  const shipping = getShippingBreakdown({
+    offerType,
+    shippingMethod,
+    state: customerDetails.state,
+  });
+  const shippingCharge = shipping.total;
+
+  const prepaidSavings = Math.max(
+    0,
+    getShippingBreakdown({
+      offerType,
+      shippingMethod: "cod",
+      state: customerDetails.state,
+    }).total -
+      getShippingBreakdown({
+        offerType,
+        shippingMethod: "online",
+        state: customerDetails.state,
+      }).total,
+  );
+
   const cleanerCharge =
     shoeCleanerAddon && addShoeCleaner ? SHOE_CLEANER_PRICE : 0;
   const totalAmount = subtotal + shippingCharge + cleanerCharge;
@@ -246,6 +270,11 @@ export default function CheckoutPage() {
     setCustomerDetails((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleStateChange = (state: string) => {
+    setCustomerDetails((prev) => ({ ...prev, state }));
+    setTouched((prev) => ({ ...prev, state: true }));
+  };
+
   const handleInputBlur = (
     e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
@@ -264,7 +293,7 @@ export default function CheckoutPage() {
         imageUrl: mainProduct?.imageUrl,
         productName: mainProduct?.productName,
         size: mainProduct?.selectedSize,
-        price: mainProduct?.price || offerBasePrice,
+        price: isOnePair ? ONE_PAIR_PRICE : mainProduct?.price || BASE_PRICE,
         isFreeItem: false,
       },
     ];
@@ -322,6 +351,11 @@ export default function CheckoutPage() {
 
     const title = isOnePair ? "1 PAIR OFFER" : "2 PAIR COMBO";
 
+    const shippingLine =
+      shippingCharge === 0
+        ? "Free (Prepaid)"
+        : `₹${shippingCharge} (${isCod ? "COD" : "Prepaid"})`;
+
     return `*ORDER CONFIRMATION – ${title}*
 ⚠️ ${reason}. Please confirm this order manually.
 
@@ -342,7 +376,7 @@ ${pairLines.join("\n\n")}
 
 *PAYMENT SUMMARY*
 - Product Price: ₹${subtotal}
-${cleanerCharge > 0 ? `- Add-on: Shoe Cleaner (+₹${SHOE_CLEANER_PRICE})\n` : ""}- Shipping: ${shippingMethod === "online" ? "Free (Prepaid)" : `₹${COD_CHARGE} (COD)`}
+${cleanerCharge > 0 ? `- Add-on: Shoe Cleaner (+₹${SHOE_CLEANER_PRICE})\n` : ""}- Shipping: ${shippingLine}
 ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
 *Total Amount Payable: ₹${totalAmount}✅*`.trim();
   };
@@ -418,9 +452,9 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          offerType, // 👈 server uses this to pick the base price
+          offerType, // server uses this to pick the base price
           lines,
-          customerDetails,
+          customerDetails, // server validates state for the outside-Kerala charge
           shippingMethod,
           addShoeCleaner: shoeCleanerAddon && addShoeCleaner,
           freeSocksOffer,
@@ -527,6 +561,7 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
 
         {currentStep === "payment" ? (
           <PaymentStep
+            offerType={offerType}
             mainProduct={mainProduct}
             freeProduct={freeProduct}
             freeSocksOffer={freeSocksOffer}
@@ -549,18 +584,23 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
               customerDetails={customerDetails}
               handleInputChange={handleInputChange}
               handleInputBlur={handleInputBlur}
+              handleStateChange={handleStateChange}
               getFieldError={getFieldError}
             />
           </div>
         )}
 
         <OrderSummary
+          isOnePair={isOnePair}
           pair1Extra={pair1Extra}
           pair2Extra={pair2Extra}
           freeSocksOffer={freeSocksOffer}
           shoeCleanerAddon={shoeCleanerAddon}
           addShoeCleaner={addShoeCleaner}
           shippingMethod={shippingMethod}
+          shippingCharge={shippingCharge}
+          outsideKeralaExtra={shipping.outsideExtra}
+          prepaidSavings={prepaidSavings}
           activeDeliveryEnd={activeDelivery.end}
           totalAmount={totalAmount}
         />

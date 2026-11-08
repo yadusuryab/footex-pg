@@ -6,6 +6,7 @@ import {
   LazyReviews,
   LazyShopVideo,
 } from "@/components/sections/lazy-sections";
+import { OnePairOfferCTA } from "@/components/sections/one-pair";
 
 // @next-codemod-ignore Cache Components adoption: this segment temporarily allows blocking.
 
@@ -36,12 +37,18 @@ export default async function Home() {
           <div className={slot}>
             <Hero />
           </div>
+         <div className={slot}>
+          <OnePairOfferCTA />
+        </div>
           {freeSocksOffer && (
             <div className={slot}>
               <FreeSocksPromo />
             </div>
           )}
         </div>
+       
+         
+      
         <div>
           <div className={slot}>
             <OrderTrackCTA />

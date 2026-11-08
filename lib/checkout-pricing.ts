@@ -1,9 +1,10 @@
 // lib/checkout-pricing.ts
 import {
   BASE_PRICE,
-  COD_CHARGE,
+  ONE_PAIR_PRICE,
   SHOE_CLEANER_PRICE,
 } from "@/lib/checkout-constants";
+import { getShippingBreakdown, OfferType } from "@/lib/checkout-shipping";
 
 export const COD_ADVANCE_AMOUNT = 300;
 
@@ -34,10 +35,23 @@ export type PricedCart = {
 export async function priceCart(
   sanity: any,
   lines: CartLineInput[],
-  opts: { shippingMethod: "online" | "cod"; addShoeCleaner: boolean }
+  opts: {
+    shippingMethod: "online" | "cod";
+    addShoeCleaner: boolean;
+    offerType?: OfferType; // defaults to "two-pair"
+    state?: string; // selected delivery state, drives outside-Kerala charge
+  }
 ): Promise<PricedCart> {
   if (!lines.length) throw new Error("Cart is empty");
   if (lines.length > 2) throw new Error("Max 2 items per order");
+
+  const offerType: OfferType = opts.offerType === "one-pair" ? "one-pair" : "two-pair";
+  const isOnePair = offerType === "one-pair";
+
+  // One pair: exactly one paid line, never a free item
+  if (isOnePair && (lines.length !== 1 || lines[0].isFreeItem)) {
+    throw new Error("Invalid one pair order");
+  }
 
   const ids = lines.map((l) => l.productId);
 
@@ -69,7 +83,12 @@ export async function priceCart(
         ? `${p.rawImage}?w=400&h=400&auto=format&q=85&fit=crop`
         : "",
       size: l.selectedSize,
-      price: typeof p.price === "number" ? p.price : BASE_PRICE,
+      // One pair is a flat price for any shoe; two pair uses the product price
+      price: isOnePair
+        ? ONE_PAIR_PRICE
+        : typeof p.price === "number"
+          ? p.price
+          : BASE_PRICE,
       isFreeItem: !!l.isFreeItem,
     };
   });
@@ -85,12 +104,19 @@ export async function priceCart(
 
   const items = built as NonNullable<(typeof built)[number]>[];
 
-  const pair1Extra = Math.max(0, items[0].price - BASE_PRICE);
-  const pair2Extra = items[1] ? Math.max(0, items[1].price - BASE_PRICE) : 0;
-  const subtotal = BASE_PRICE + pair1Extra + pair2Extra;
+  // One pair: flat ₹800, no extras. Two pair: ₹1499 + extras above standard price.
+  const pair1Extra = isOnePair ? 0 : Math.max(0, items[0].price - BASE_PRICE);
+  const pair2Extra =
+    !isOnePair && items[1] ? Math.max(0, items[1].price - BASE_PRICE) : 0;
+  const offerBasePrice = isOnePair ? ONE_PAIR_PRICE : BASE_PRICE;
+  const subtotal = offerBasePrice + pair1Extra + pair2Extra;
 
   const isCod = opts.shippingMethod === "cod";
-  const shippingCharge = isCod ? COD_CHARGE : 0;
+  const shippingCharge = getShippingBreakdown({
+    offerType,
+    shippingMethod: opts.shippingMethod,
+    state: opts.state ?? "",
+  }).total;
   const cleanerCharge = opts.addShoeCleaner ? SHOE_CLEANER_PRICE : 0;
   const totalAmount = subtotal + shippingCharge + cleanerCharge;
   const paymentAmount = isCod ? COD_ADVANCE_AMOUNT : totalAmount;

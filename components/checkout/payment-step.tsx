@@ -70,22 +70,6 @@ export function PaymentStep({
               </span>
             </div>
 
-<<<<<<< HEAD
-      {freeProduct && (
-        <div className="group relative rounded-2xl bg-muted/40 p-3 transition-colors">
-          <ProductImage
-            product={freeProduct}
-            alt={freeProduct.productName || "Free Product"}
-            borderClass="border-transparent"
-          />
-          <div className="mt-2.5">
-            <p className="text-sm font-medium leading-tight truncate text-foreground">
-              {freeProduct.productName || "Free Product."}
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Size {freeProduct.selectedSize || "N/A"}
-            </p>
-=======
             {freeProduct && (
               <div className="group relative rounded-2xl bg-muted/40 p-3 transition-colors">
                 <ProductImage
@@ -106,7 +90,6 @@ export function PaymentStep({
                 </span>
               </div>
             )}
->>>>>>> pricing-update
           </div>
 
           {freeSocksOffer && (

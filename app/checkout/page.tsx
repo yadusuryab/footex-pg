@@ -24,21 +24,21 @@ import { OrderSummary } from "@/components/checkout/order-summary";
 import {
   BASE_PRICE,
   ONE_PAIR_PRICE,
-  COD_CHARGE,
   SHOE_CLEANER_PRICE,
   ONLINE_DELIVERY_MIN_DAYS,
   ONLINE_DELIVERY_MAX_DAYS,
   COD_DELIVERY_MIN_DAYS,
   COD_DELIVERY_MAX_DAYS,
 } from "@/lib/checkout-constants";
+import { getShippingBreakdown } from "@/lib/checkout-shipping";
+import { getCodAdvance } from "@/lib/checkout-pricing";
+import { DEFAULT_STATE } from "@/lib/indian-states";
 import { StepProgress } from "@/components/checkout/step-progress";
 import { CartItem } from "@/lib/types/checkout";
 import { CheckoutStep, CustomerDetails } from "@/lib/types/checkout";
 import { getExpectedDelivery } from "@/lib/checkout-utils";
 import { EmptyCart } from "@/components/checkout/empty-cart";
 import { PaymentStep } from "@/components/checkout/payment-step";
-
-const COD_ADVANCE_AMOUNT = 300;
 
 const SITE_ORIGIN = "https://footex.in";
 
@@ -98,7 +98,7 @@ export default function CheckoutPage() {
     contact2: "",
     address: "",
     district: "",
-    state: "",
+    state: DEFAULT_STATE,
     pincode: "",
     landmark: "",
     instagramId: "",
@@ -164,7 +164,7 @@ export default function CheckoutPage() {
 
   const mainProduct = cartItems[0];
 
-  // ✅ Offer type set by useAddToCart. Missing/unknown = two pair (original behavior).
+  // Offer type set by useAddToCart. Missing/unknown = two pair (original behavior).
   const offerType: "one-pair" | "two-pair" =
     mainProduct?.offerType === "one-pair" ? "one-pair" : "two-pair";
   const isOnePair = offerType === "one-pair";
@@ -172,25 +172,51 @@ export default function CheckoutPage() {
   // Free pair only exists in the two pair offer
   const freeProduct = isOnePair ? undefined : mainProduct?.freeProduct;
 
-  // ✅ Base price depends on the offer
+  // Base price depends on the offer
   const offerBasePrice = isOnePair ? ONE_PAIR_PRICE : BASE_PRICE;
 
-  const pair1Extra = Math.max(
-    0,
-    (mainProduct?.price || offerBasePrice) - offerBasePrice,
-  );
+  // One pair: flat price for any shoe, never an extra.
+  // Two pair: extra only when a pair costs more than the standard price.
+  const pair1Extra = isOnePair
+    ? 0
+    : Math.max(0, (mainProduct?.price || BASE_PRICE) - BASE_PRICE);
   const pair2Extra = isOnePair
     ? 0
     : Math.max(0, (freeProduct?.price || BASE_PRICE) - BASE_PRICE);
   const subtotal = offerBasePrice + pair1Extra + pair2Extra;
-  const shippingCharge = shippingMethod === "online" ? 0 : COD_CHARGE;
+
+  // Shipping depends on offer, payment method and selected state (Kerala vs outside)
+  const shipping = getShippingBreakdown({
+    offerType,
+    shippingMethod,
+    state: customerDetails.state,
+  });
+  const shippingCharge = shipping.total;
+
+  const prepaidSavings = Math.max(
+    0,
+    getShippingBreakdown({
+      offerType,
+      shippingMethod: "cod",
+      state: customerDetails.state,
+    }).total -
+      getShippingBreakdown({
+        offerType,
+        shippingMethod: "online",
+        state: customerDetails.state,
+      }).total,
+  );
+
   const cleanerCharge =
     shoeCleanerAddon && addShoeCleaner ? SHOE_CLEANER_PRICE : 0;
   const totalAmount = subtotal + shippingCharge + cleanerCharge;
 
+  // COD advance: one pair = COD shipping (₹150 Kerala / ₹200 outside),
+  // two pair = flat ₹300. Same helper the server uses.
   const isCod = shippingMethod === "cod";
-  const paymentAmount = isCod ? COD_ADVANCE_AMOUNT : totalAmount;
-  const remainingAmount = isCod ? totalAmount - COD_ADVANCE_AMOUNT : 0;
+  const codAdvance = getCodAdvance(offerType, customerDetails.state);
+  const paymentAmount = isCod ? codAdvance : totalAmount;
+  const remainingAmount = isCod ? totalAmount - codAdvance : 0;
 
   const onlineDelivery = getExpectedDelivery(
     ONLINE_DELIVERY_MIN_DAYS,
@@ -246,6 +272,11 @@ export default function CheckoutPage() {
     setCustomerDetails((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleStateChange = (state: string) => {
+    setCustomerDetails((prev) => ({ ...prev, state }));
+    setTouched((prev) => ({ ...prev, state: true }));
+  };
+
   const handleInputBlur = (
     e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
@@ -256,44 +287,6 @@ export default function CheckoutPage() {
   // Free pair is only included in the two pair offer
   const hasFreePair =
     !isOnePair && !!mainProduct?.buyOneGetOne && !!freeProduct;
-
-  const buildOrderPayload = () => {
-    const items = [
-      {
-        productId: mainProduct?._id,
-        imageUrl: mainProduct?.imageUrl,
-        productName: mainProduct?.productName,
-        size: mainProduct?.selectedSize,
-        price: mainProduct?.price || offerBasePrice,
-        isFreeItem: false,
-      },
-    ];
-    if (hasFreePair && freeProduct) {
-      items.push({
-        productId: freeProduct._id,
-        imageUrl: freeProduct.imageUrl,
-        productName: freeProduct.productName,
-        size: freeProduct.selectedSize,
-        price: freeProduct.price || BASE_PRICE,
-        isFreeItem: true,
-      });
-    }
-    return {
-      offerType,
-      items,
-      customerDetails,
-      shippingMethod,
-      shoeCleanerAddon: shoeCleanerAddon && addShoeCleaner,
-      freeSocksOffer,
-      subtotal,
-      shippingCharge,
-      totalAmount,
-      isCod,
-      advancePaid: paymentAmount,
-      remainingAmount,
-      expectedDeliveryLabel: activeDelivery.label,
-    };
-  };
 
   // Shared shape for Meta Pixel content params, built from cart contents.
   // Used only for the Purchase event, fired on confirmed Razorpay
@@ -322,6 +315,11 @@ export default function CheckoutPage() {
 
     const title = isOnePair ? "1 PAIR OFFER" : "2 PAIR COMBO";
 
+    const shippingLine =
+      shippingCharge === 0
+        ? "Free (Prepaid)"
+        : `₹${shippingCharge} (${isCod ? "COD" : "Prepaid"})`;
+
     return `*ORDER CONFIRMATION – ${title}*
 ⚠️ ${reason}. Please confirm this order manually.
 
@@ -342,8 +340,8 @@ ${pairLines.join("\n\n")}
 
 *PAYMENT SUMMARY*
 - Product Price: ₹${subtotal}
-${cleanerCharge > 0 ? `- Add-on: Shoe Cleaner (+₹${SHOE_CLEANER_PRICE})\n` : ""}- Shipping: ${shippingMethod === "online" ? "Free (Prepaid)" : `₹${COD_CHARGE} (COD)`}
-${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
+${cleanerCharge > 0 ? `- Add-on: Shoe Cleaner (+₹${SHOE_CLEANER_PRICE})\n` : ""}- Shipping: ${shippingLine}
+${isCod ? `- Advance attempted: ₹${codAdvance}\n` : ""}
 *Total Amount Payable: ₹${totalAmount}✅*`.trim();
   };
 
@@ -418,9 +416,9 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          offerType, // 👈 server uses this to pick the base price
+          offerType, // server uses this to pick the base price
           lines,
-          customerDetails,
+          customerDetails, // server validates state for the outside-Kerala charge
           shippingMethod,
           addShoeCleaner: shoeCleanerAddon && addShoeCleaner,
           freeSocksOffer,
@@ -440,7 +438,7 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
         currency: razorpayOrder.currency,
         name: site.name || "Footex",
         description: isCod
-          ? `COD Advance Payment (₹${COD_ADVANCE_AMOUNT})`
+          ? `COD Advance Payment (₹${codAdvance})`
           : isOnePair
             ? "1 Pair Shoes Order"
             : "2 Pair Shoes Order",
@@ -527,6 +525,7 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
 
         {currentStep === "payment" ? (
           <PaymentStep
+            offerType={offerType}
             mainProduct={mainProduct}
             freeProduct={freeProduct}
             freeSocksOffer={freeSocksOffer}
@@ -537,6 +536,7 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
             setShippingMethod={setShippingMethod}
             onlineDeliveryLabel={onlineDelivery.label}
             codDeliveryLabel={codDelivery.label}
+            codAdvance={codAdvance}
             onContinue={goToDetailsStep}
           />
         ) : (
@@ -549,25 +549,30 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
               customerDetails={customerDetails}
               handleInputChange={handleInputChange}
               handleInputBlur={handleInputBlur}
+              handleStateChange={handleStateChange}
               getFieldError={getFieldError}
             />
           </div>
         )}
 
         <OrderSummary
+          isOnePair={isOnePair}
           pair1Extra={pair1Extra}
           pair2Extra={pair2Extra}
           freeSocksOffer={freeSocksOffer}
           shoeCleanerAddon={shoeCleanerAddon}
           addShoeCleaner={addShoeCleaner}
           shippingMethod={shippingMethod}
+          shippingCharge={shippingCharge}
+          outsideKeralaExtra={shipping.outsideExtra}
+          prepaidSavings={prepaidSavings}
           activeDeliveryEnd={activeDelivery.end}
           totalAmount={totalAmount}
         />
 
         {isCod && (
           <p className="text-xs text-muted-foreground mt-3 text-center">
-            ₹{COD_ADVANCE_AMOUNT} advance now, ₹{remainingAmount} on delivery
+            ₹{codAdvance} advance now, ₹{remainingAmount} on delivery
           </p>
         )}
       </div>
@@ -585,7 +590,7 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
                   <Loader2 className="h-4 w-4 animate-spin" /> Processing...
                 </>
               ) : isCod ? (
-                `Pay ₹${COD_ADVANCE_AMOUNT} advance`
+                `Pay ₹${codAdvance} advance`
               ) : (
                 `Pay now — ₹${totalAmount}`
               )}

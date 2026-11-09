@@ -185,7 +185,7 @@ function OrderConfirmedContent() {
             <div className="flex justify-between">
               <span className="text-muted-foreground">Shipping</span>
               <span>
-                {order.shippingMethod === "online" ? "FREE" : `₹${order.shippingCharge}`}
+                {order.shippingCharge > 0 ? `₹${order.shippingCharge}` : "FREE"}
               </span>
             </div>
             <div className="flex justify-between font-semibold text-base pt-1">

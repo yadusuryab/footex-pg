@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { StateSelect } from "./state-select";
 
 interface CustomerDetailsFormProps {
   customerDetails: {
@@ -23,6 +24,7 @@ interface CustomerDetailsFormProps {
   handleInputBlur?: (
     e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => void;
+  handleStateChange: (state: string) => void;
   getFieldError?: (field: string) => string | undefined;
 }
 
@@ -47,6 +49,7 @@ export const CustomerDetailsForm = ({
   customerDetails,
   handleInputChange,
   handleInputBlur,
+  handleStateChange,
   getFieldError,
 }: CustomerDetailsFormProps) => {
   const errorFor = (field: string) => getFieldError?.(field);
@@ -178,15 +181,11 @@ export const CustomerDetailsForm = ({
           <Label htmlFor="state" className={labelClass}>
             State *
           </Label>
-          <Input
+          <StateSelect
             id="state"
-            name="state"
-            placeholder="Your state"
             value={customerDetails.state}
-            onChange={handleInputChange}
-            onBlur={handleInputBlur}
-            aria-invalid={!!errorFor("state")}
-            className={inputClass(!!errorFor("state"))}
+            onChange={handleStateChange}
+            hasError={!!errorFor("state")}
           />
           <FieldError message={errorFor("state")} />
         </div>

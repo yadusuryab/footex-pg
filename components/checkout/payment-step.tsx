@@ -66,7 +66,7 @@ export function PaymentStep({
           />
           <div className="mt-2.5">
             <p className="text-sm font-medium leading-tight truncate text-foreground">
-              {freeProduct.productName || "Free Product"}
+              {freeProduct.productName || "Free Product."}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
               Size {freeProduct.selectedSize || "N/A"}

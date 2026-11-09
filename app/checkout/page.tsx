@@ -31,6 +31,7 @@ import {
   COD_DELIVERY_MAX_DAYS,
 } from "@/lib/checkout-constants";
 import { getShippingBreakdown } from "@/lib/checkout-shipping";
+import { getCodAdvance } from "@/lib/checkout-pricing";
 import { DEFAULT_STATE } from "@/lib/indian-states";
 import { StepProgress } from "@/components/checkout/step-progress";
 import { CartItem } from "@/lib/types/checkout";
@@ -38,8 +39,6 @@ import { CheckoutStep, CustomerDetails } from "@/lib/types/checkout";
 import { getExpectedDelivery } from "@/lib/checkout-utils";
 import { EmptyCart } from "@/components/checkout/empty-cart";
 import { PaymentStep } from "@/components/checkout/payment-step";
-
-const COD_ADVANCE_AMOUNT = 300;
 
 const SITE_ORIGIN = "https://footex.in";
 
@@ -212,9 +211,12 @@ export default function CheckoutPage() {
     shoeCleanerAddon && addShoeCleaner ? SHOE_CLEANER_PRICE : 0;
   const totalAmount = subtotal + shippingCharge + cleanerCharge;
 
+  // COD advance: one pair = COD shipping (₹150 Kerala / ₹200 outside),
+  // two pair = flat ₹300. Same helper the server uses.
   const isCod = shippingMethod === "cod";
-  const paymentAmount = isCod ? COD_ADVANCE_AMOUNT : totalAmount;
-  const remainingAmount = isCod ? totalAmount - COD_ADVANCE_AMOUNT : 0;
+  const codAdvance = getCodAdvance(offerType, customerDetails.state);
+  const paymentAmount = isCod ? codAdvance : totalAmount;
+  const remainingAmount = isCod ? totalAmount - codAdvance : 0;
 
   const onlineDelivery = getExpectedDelivery(
     ONLINE_DELIVERY_MIN_DAYS,
@@ -286,44 +288,6 @@ export default function CheckoutPage() {
   const hasFreePair =
     !isOnePair && !!mainProduct?.buyOneGetOne && !!freeProduct;
 
-  const buildOrderPayload = () => {
-    const items = [
-      {
-        productId: mainProduct?._id,
-        imageUrl: mainProduct?.imageUrl,
-        productName: mainProduct?.productName,
-        size: mainProduct?.selectedSize,
-        price: isOnePair ? ONE_PAIR_PRICE : mainProduct?.price || BASE_PRICE,
-        isFreeItem: false,
-      },
-    ];
-    if (hasFreePair && freeProduct) {
-      items.push({
-        productId: freeProduct._id,
-        imageUrl: freeProduct.imageUrl,
-        productName: freeProduct.productName,
-        size: freeProduct.selectedSize,
-        price: freeProduct.price || BASE_PRICE,
-        isFreeItem: true,
-      });
-    }
-    return {
-      offerType,
-      items,
-      customerDetails,
-      shippingMethod,
-      shoeCleanerAddon: shoeCleanerAddon && addShoeCleaner,
-      freeSocksOffer,
-      subtotal,
-      shippingCharge,
-      totalAmount,
-      isCod,
-      advancePaid: paymentAmount,
-      remainingAmount,
-      expectedDeliveryLabel: activeDelivery.label,
-    };
-  };
-
   // Shared shape for Meta Pixel content params, built from cart contents.
   // Used only for the Purchase event, fired on confirmed Razorpay
   // payment success below.
@@ -377,7 +341,7 @@ ${pairLines.join("\n\n")}
 *PAYMENT SUMMARY*
 - Product Price: ₹${subtotal}
 ${cleanerCharge > 0 ? `- Add-on: Shoe Cleaner (+₹${SHOE_CLEANER_PRICE})\n` : ""}- Shipping: ${shippingLine}
-${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
+${isCod ? `- Advance attempted: ₹${codAdvance}\n` : ""}
 *Total Amount Payable: ₹${totalAmount}✅*`.trim();
   };
 
@@ -474,7 +438,7 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
         currency: razorpayOrder.currency,
         name: site.name || "Footex",
         description: isCod
-          ? `COD Advance Payment (₹${COD_ADVANCE_AMOUNT})`
+          ? `COD Advance Payment (₹${codAdvance})`
           : isOnePair
             ? "1 Pair Shoes Order"
             : "2 Pair Shoes Order",
@@ -572,6 +536,7 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
             setShippingMethod={setShippingMethod}
             onlineDeliveryLabel={onlineDelivery.label}
             codDeliveryLabel={codDelivery.label}
+            codAdvance={codAdvance}
             onContinue={goToDetailsStep}
           />
         ) : (
@@ -607,7 +572,7 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
 
         {isCod && (
           <p className="text-xs text-muted-foreground mt-3 text-center">
-            ₹{COD_ADVANCE_AMOUNT} advance now, ₹{remainingAmount} on delivery
+            ₹{codAdvance} advance now, ₹{remainingAmount} on delivery
           </p>
         )}
       </div>
@@ -625,7 +590,7 @@ ${isCod ? `- Advance attempted: ₹${COD_ADVANCE_AMOUNT}\n` : ""}
                   <Loader2 className="h-4 w-4 animate-spin" /> Processing...
                 </>
               ) : isCod ? (
-                `Pay ₹${COD_ADVANCE_AMOUNT} advance`
+                `Pay ₹${codAdvance} advance`
               ) : (
                 `Pay now — ₹${totalAmount}`
               )}

@@ -23,6 +23,7 @@ export function PaymentStep({
   setShippingMethod,
   onlineDeliveryLabel,
   codDeliveryLabel,
+  codAdvance,
   onContinue,
 }: {
   offerType: OfferType;
@@ -36,6 +37,7 @@ export function PaymentStep({
   setShippingMethod: (v: "online" | "cod") => void;
   onlineDeliveryLabel: string;
   codDeliveryLabel: string;
+  codAdvance: number;
   onContinue: () => void;
 }) {
   const onlineShipping = getBaseShipping(offerType, "online");
@@ -197,6 +199,9 @@ export function PaymentStep({
                 <p className="text-xs text-muted-foreground mt-0.5">
                   Arrives {codDeliveryLabel}
                 </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  ₹{codAdvance} advance now, rest on delivery
+                </p>
               </div>
             </label>
           </RadioGroup>
@@ -205,6 +210,9 @@ export function PaymentStep({
             <p className="text-xs text-muted-foreground mt-2.5">
               Outside Kerala: +₹{outsideKeralaExtra} shipping, applied when you
               choose your state.
+              {offerType === "one-pair" && shippingMethod === "cod"
+                ? ` COD advance also becomes ₹${codAdvance + outsideKeralaExtra}.`
+                : ""}
             </p>
           )}
         </div>

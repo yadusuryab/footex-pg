@@ -3,10 +3,12 @@ import {
   BASE_PRICE,
   ONE_PAIR_PRICE,
   SHOE_CLEANER_PRICE,
+  COD_ADVANCE_AMOUNT,
 } from "@/lib/checkout-constants";
 import { getShippingBreakdown, OfferType } from "@/lib/checkout-shipping";
 
-export const COD_ADVANCE_AMOUNT = 300;
+// Re-exported in case other files still import it from here
+export { COD_ADVANCE_AMOUNT };
 
 export type CartLineInput = {
   productId: string;
@@ -31,6 +33,23 @@ export type PricedCart = {
     isFreeItem: boolean;
   }>;
 };
+
+/**
+ * Advance paid upfront for COD orders.
+ *  - One pair: equals the COD shipping charge (₹150 Kerala / ₹200 outside)
+ *  - Two pair: flat ₹300
+ * Used by both the client (display) and the server (amount charged).
+ */
+export function getCodAdvance(offerType: OfferType, state: string): number {
+  if (offerType === "one-pair") {
+    return getShippingBreakdown({
+      offerType,
+      shippingMethod: "cod",
+      state,
+    }).total;
+  }
+  return COD_ADVANCE_AMOUNT;
+}
 
 export async function priceCart(
   sanity: any,
@@ -64,8 +83,6 @@ export async function priceCart(
     }`,
     { ids }
   );
-
-  console.log("[priceCart] products:", JSON.stringify(products));
 
   const byId = new Map(products.map((p: any) => [p._id, p]));
 
@@ -111,16 +128,17 @@ export async function priceCart(
   const offerBasePrice = isOnePair ? ONE_PAIR_PRICE : BASE_PRICE;
   const subtotal = offerBasePrice + pair1Extra + pair2Extra;
 
+  const state = opts.state ?? "";
   const isCod = opts.shippingMethod === "cod";
   const shippingCharge = getShippingBreakdown({
     offerType,
     shippingMethod: opts.shippingMethod,
-    state: opts.state ?? "",
+    state,
   }).total;
   const cleanerCharge = opts.addShoeCleaner ? SHOE_CLEANER_PRICE : 0;
   const totalAmount = subtotal + shippingCharge + cleanerCharge;
-  const paymentAmount = isCod ? COD_ADVANCE_AMOUNT : totalAmount;
-  const remainingAmount = isCod ? totalAmount - COD_ADVANCE_AMOUNT : 0;
+  const paymentAmount = isCod ? getCodAdvance(offerType, state) : totalAmount;
+  const remainingAmount = isCod ? totalAmount - paymentAmount : 0;
 
   return {
     subtotal,

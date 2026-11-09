@@ -2,7 +2,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import SizeModal from "@/components/product/size-modal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, CheckCircle, ArrowRightCircle, Ruler } from "lucide-react";
@@ -345,81 +345,76 @@ export const useAddToCart = (options: UseAddToCartOptions = {}) => {
       if (!currentProduct) return null;
 
       return (
-        <Dialog open={isSizeModalOpen} onOpenChange={setIsSizeModalOpen}>
-          <DialogContent className="max-h-[90vh] p-4 rounded-2xl max-w-[320px]">
-            <DialogTitle className="sr-only">Select Size</DialogTitle>
+        <SizeModal open={isSizeModalOpen} onClose={() => setIsSizeModalOpen(false)}>
+          <div className="flex justify-center mb-4">
+            <ProductCard2 product={currentProduct} noLink={true} />
+          </div>
 
-            <div className="flex justify-center mb-4">
-              <ProductCard2 product={currentProduct} noLink={true} />
-            </div>
+          <div className="flex flex-wrap justify-center gap-2 mb-6">
+            {currentProduct.sizes?.map((rawSize) => {
+              const size = String(rawSize);
+              const off = isSizeDisabled(currentProduct, size);
 
-            <div className="flex flex-wrap justify-center gap-2 mb-6">
-              {currentProduct.sizes?.map((rawSize) => {
-                const size = String(rawSize);
-                const off = isSizeDisabled(currentProduct, size);
+              return (
+                <Button
+                  key={size}
+                  disabled={off}
+                  className={`min-w-[60px] font-semibold rounded-md ${
+                    off ? "line-through opacity-40 cursor-not-allowed" : ""
+                  }`}
+                  variant={currentSize === size ? "default" : "outline"}
+                  onClick={() => {
+                    if (off) return;
+                    if (isSelectingFreeProduct) {
+                      setSelectedFreeProductSize(size);
+                    } else {
+                      setSelectedSize(size);
+                    }
+                  }}
+                >
+                  UK {size}
+                </Button>
+              );
+            })}
+          </div>
 
-                return (
-                  <Button
-                    key={size}
-                    disabled={off}
-                    className={`min-w-[60px] font-semibold rounded-md ${
-                      off ? "line-through opacity-40 cursor-not-allowed" : ""
-                    }`}
-                    variant={currentSize === size ? "default" : "outline"}
-                    onClick={() => {
-                      if (off) return;
-                      if (isSelectingFreeProduct) {
-                        setSelectedFreeProductSize(size);
-                      } else {
-                        setSelectedSize(size);
-                      }
-                    }}
-                  >
-                    UK {size}
-                  </Button>
-                );
-              })}
-            </div>
+          <Button
+            size="lg"
+            onClick={() => {
+              if (!currentSize) {
+                toast.error("Please select a size");
+                return;
+              }
 
-            <Button
-              size="lg"
-              onClick={() => {
-                if (!currentSize) {
-                  toast.error("Please select a size");
-                  return;
-                }
+              if (isSizeDisabled(currentProduct, currentSize)) {
+                toast.error("This size is unavailable");
+                return;
+              }
 
-                if (isSizeDisabled(currentProduct, currentSize)) {
-                  toast.error("This size is unavailable");
-                  return;
-                }
-
-                if (isSelectingFreeProduct) {
-                  setIsSizeModalOpen(false);
-                  completeBogoFlow();
-                } else if (!isOnePair && selectedProduct?.buyOneGetOne) {
-                  // Two pair offer: go pick the free 2nd pair
-                  setIsBogoModalOpen(true);
-                  setIsSizeModalOpen(false);
-                } else {
-                  // One pair offer (or non-BOGO product): straight to checkout
-                  addToCart(selectedProduct!, currentSize);
-                  setIsSizeModalOpen(false);
-                  goToCheckout();
-                }
-              }}
-              className="w-full"
-              disabled={!currentSize}
-            >
-              {isSelectingFreeProduct
-                ? "Confirm & Checkout"
-                : isOnePair
-                ? "Buy Now"
-                : "Confirm Size"}
-              <IconSquareRoundedCheckFilled className="ml-2" />
-            </Button>
-          </DialogContent>
-        </Dialog>
+              if (isSelectingFreeProduct) {
+                setIsSizeModalOpen(false);
+                completeBogoFlow();
+              } else if (!isOnePair && selectedProduct?.buyOneGetOne) {
+                // Two pair offer: go pick the free 2nd pair
+                setIsBogoModalOpen(true);
+                setIsSizeModalOpen(false);
+              } else {
+                // One pair offer (or non-BOGO product): straight to checkout
+                addToCart(selectedProduct!, currentSize);
+                setIsSizeModalOpen(false);
+                goToCheckout();
+              }
+            }}
+            className="w-full rounded-xl text-lg font-semibold tracking-tighter"
+            disabled={!currentSize}
+          >
+            {isSelectingFreeProduct
+              ? "Confirm & Checkout"
+              : isOnePair
+              ? "Buy Now"
+              : "Confirm Size"}
+          </Button>
+        </SizeModal>
       );
     },
     [

@@ -304,16 +304,17 @@ export default function CheckoutPage() {
   };
 
   const buildWhatsAppMessage = (reason: string) => {
-    const pairLines = [
-      `*PAIR 1 :* ${SITE_ORIGIN}/p/${mainProduct?._id}\nSize: ${mainProduct?.selectedSize || "N/A"}`,
+    let pairLines = [
+      `*Selected Pair :* ${SITE_ORIGIN}/p/${mainProduct?._id}\nSize: ${mainProduct?.selectedSize || "N/A"}`,
     ];
     if (hasFreePair && freeProduct) {
-      pairLines.push(
+      pairLines = [
+        `*PAIR 1 :* ${SITE_ORIGIN}/p/${mainProduct?._id}\nSize: ${mainProduct?.selectedSize || "N/A"}`,
         `*PAIR 2 :* ${SITE_ORIGIN}/p/${freeProduct._id}\nSize: ${freeProduct.selectedSize || "N/A"}`,
-      );
+      ];
     }
 
-    const title = isOnePair ? "1 PAIR OFFER" : "2 PAIR COMBO";
+    const title = isOnePair ? "Your Selected Pair" : "2 PAIR COMBO";
 
     const shippingLine =
       shippingCharge === 0

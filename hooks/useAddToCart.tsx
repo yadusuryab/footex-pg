@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, CheckCircle, ArrowRightCircle, Ruler } from "lucide-react";
 import SHeading from "@/components/utils/section-heading";
-import { IconSquareRoundedCheckFilled } from "@tabler/icons-react";
 import ProductCard2 from "@/components/product/product-image-card";
 import Image from "next/image";
 import Link from "next/link";
@@ -24,7 +23,7 @@ export interface Product {
 }
 
 export interface UseAddToCartOptions {
-  /** "one" = single pair, skip BOGO. "two" = BOGO flow (default, original behavior). */
+  /** "one" = single pair, opens product page. "two" = BOGO flow (default). */
   pair?: "one" | "two";
 }
 
@@ -56,13 +55,22 @@ export const useAddToCart = (options: UseAddToCartOptions = {}) => {
   const [bogoLoading, setBogoLoading] = useState<boolean>(false);
   const [allBogoProducts, setAllBogoProducts] = useState<Product[]>([]);
 
-  const handleProductClick = useCallback((product: Product) => {
-    setSelectedProduct(product);
-    setSelectedSize(null);
-    setSelectedFreeProduct(null);
-    setSelectedFreeProductSize(null);
-    setIsSizeModalOpen(true);
-  }, []);
+  const handleProductClick = useCallback(
+    (product: Product) => {
+      // One pair: open the full product page
+      if (isOnePair) {
+        router.push(`/p/${product._id}`);
+        return;
+      }
+      // Two pair: original quick size flow
+      setSelectedProduct(product);
+      setSelectedSize(null);
+      setSelectedFreeProduct(null);
+      setSelectedFreeProductSize(null);
+      setIsSizeModalOpen(true);
+    },
+    [isOnePair, router]
+  );
 
   const loadMoreBogoProducts = useCallback(async () => {
     if (bogoLoading || !bogoHasMore) return;
@@ -88,7 +96,6 @@ export const useAddToCart = (options: UseAddToCartOptions = {}) => {
     }
   }, [bogoOffset, bogoLoading, bogoHasMore]);
 
-  // Only load extra BOGO products in two pair mode
   useEffect(() => {
     if (isOnePair) return;
     if (isBogoModalOpen && allBogoProducts.length === 0) {
@@ -109,7 +116,6 @@ export const useAddToCart = (options: UseAddToCartOptions = {}) => {
       const cartItem = {
         ...item,
         selectedSize: size,
-        // Tells checkout which offer was used
         offerType: isOnePair ? "one-pair" : "two-pair",
         freeProduct: freeProduct
           ? {
@@ -335,7 +341,7 @@ export const useAddToCart = (options: UseAddToCartOptions = {}) => {
     ]
   );
 
-  // Size modal (used by both modes)
+  // Size modal (two pair mode)
   const renderSizeModal = useCallback(
     (bogoProducts: Product[]) => {
       const isSelectingFreeProduct = !isOnePair && !!selectedFreeProduct;
@@ -395,11 +401,9 @@ export const useAddToCart = (options: UseAddToCartOptions = {}) => {
                 setIsSizeModalOpen(false);
                 completeBogoFlow();
               } else if (!isOnePair && selectedProduct?.buyOneGetOne) {
-                // Two pair offer: go pick the free 2nd pair
                 setIsBogoModalOpen(true);
                 setIsSizeModalOpen(false);
               } else {
-                // One pair offer (or non-BOGO product): straight to checkout
                 addToCart(selectedProduct!, currentSize);
                 setIsSizeModalOpen(false);
                 goToCheckout();
@@ -408,11 +412,7 @@ export const useAddToCart = (options: UseAddToCartOptions = {}) => {
             className="w-full rounded-xl text-lg font-semibold tracking-tighter"
             disabled={!currentSize}
           >
-            {isSelectingFreeProduct
-              ? "Confirm & Checkout"
-              : isOnePair
-              ? "Buy Now"
-              : "Confirm Size"}
+            {isSelectingFreeProduct ? "Confirm & Checkout" : "Confirm Size"}
           </Button>
         </SizeModal>
       );

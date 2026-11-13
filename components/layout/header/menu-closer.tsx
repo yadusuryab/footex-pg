@@ -23,7 +23,7 @@ export function HideOn({ routes, children }: { routes: string[]; children: React
 }
 
 export const SaleGate = ({ children }: { children: ReactNode }) => (
-  <HideOn routes={["/offer", "/checkout", "/cart", "/order"]}>{children}</HideOn>
+  <HideOn routes={["/offer", "/checkout", "/cart", "/order","/p"]}>{children}</HideOn>
 );
 
 /* Only these three numbers re-render each second, and it rolls over daily at 00:00 UTC. */

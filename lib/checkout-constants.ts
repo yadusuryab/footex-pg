@@ -4,8 +4,8 @@ export const COD_CHARGE = 300; // two pair COD shipping
 export const TWO_PAIR_ONLINE_OUTSIDE_KERALA_EXTRA = 100; // prepaid only
 
 // ---- One pair offer ----
-export const ONE_PAIR_PRICE = 800;
-export const ONE_PAIR_ONLINE_SHIPPING = 100; // prepaid, Kerala (150 outside)
+export const ONE_PAIR_PRICE = 899;
+export const ONE_PAIR_ONLINE_SHIPPING = 0; // prepaid, Kerala (150 outside)
 export const ONE_PAIR_COD_SHIPPING = 150; // COD, Kerala (200 outside)
 export const ONE_PAIR_OUTSIDE_KERALA_EXTRA = 50; // prepaid + COD
 

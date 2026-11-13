@@ -162,7 +162,7 @@ export default function Header() {
         </div>
       </nav>
 
-      <div className="h-42 md:h-52 sm:h-28" />
+      <div className="h-28 md:h-52 sm:h-28" />
     </>
   );
 }

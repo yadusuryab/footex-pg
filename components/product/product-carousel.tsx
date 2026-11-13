@@ -21,7 +21,7 @@ export default function ProductCarousel({ images, productName }: ProductCarousel
   return (
     <div className="space-y-4">
       {/* Main Image */}
-      <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+      <div className="aspect-square bg-gray-100 rounded-3xl overflow-hidden">
         <Image
           src={images[currentIndex]?.url || "/placeholder-image.jpg"}
           alt={`${productName} - Image ${currentIndex + 1}`}

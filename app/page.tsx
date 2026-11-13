@@ -31,7 +31,7 @@ export default async function Home() {
   const freeSocksOffer = await getFreeSocksOffer();
 
   return (
-    <div className="py-4 md:px-6 min-h-screen">
+    <div className="py-4 md:px-6 mt-14 min-h-screen">
       <div className="md:flex md:justify-center md:items-start">
         <div>
           <div className={slot}>

@@ -1,14 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
 import { site } from "@/lib/site-config";
 
-// TODO: replace with your real WhatsApp number, country code first, no + or spaces
-const WHATSAPP_NUMBER = site.social.whatsapp || "919656060874"; // Example: "919876543210" for +91 98765 43210
+const WHATSAPP_NUMBER = site.social.whatsapp || "919656060874";
 const DEFAULT_MESSAGE = "Hi! I have a question about my order.";
 const BUSINESS_NAME = "Support";
 const REPLY_TIME = "Typically replies within an hour";
+
+// Hide on these paths (prefix match)
+const HIDDEN_PATHS = ["/checkout", "/admin", "/order-success","/p"];
 
 function WhatsAppGlyph({ className }: { className?: string }) {
   return (
@@ -22,6 +25,7 @@ function WhatsAppGlyph({ className }: { className?: string }) {
 }
 
 export function WhatsAppButton() {
+  const pathname = usePathname() ?? "";
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState(DEFAULT_MESSAGE);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -36,6 +40,17 @@ export function WhatsAppButton() {
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
+
+  // Close panel on route change
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  // Must stay after all hooks
+  const hidden = HIDDEN_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(p + "/")
+  );
+  if (hidden) return null;
 
   const href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 
